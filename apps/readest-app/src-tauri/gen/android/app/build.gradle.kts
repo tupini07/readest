@@ -58,8 +58,11 @@ android {
         }
         getByName("release") {
             isMinifyEnabled = true
-            if (keystorePropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("signing")
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("signing")
+            } else {
+                // Fall back to debug signing so release APKs install without a keystore
+                signingConfigs.getByName("debug")
             }
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }

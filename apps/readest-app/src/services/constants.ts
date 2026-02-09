@@ -22,6 +22,7 @@ import {
   ReadSettings,
   SystemSettings,
 } from '@/types/settings';
+import { HardcoverSettings } from '@/types/hardcover';
 import { UserStorageQuota, UserDailyTranslationQuota } from '@/types/quota';
 import { getDefaultMaxBlockSize, getDefaultMaxInlineSize } from '@/utils/config';
 import { stubTranslation as _ } from '@/utils/misc';
@@ -64,6 +65,17 @@ export const DEFAULT_KOSYNC_SETTINGS = {
   enabled: false,
 } as KOSyncSettings;
 
+export const DEFAULT_HARDCOVER_SETTINGS: HardcoverSettings = {
+  enabled: false,
+  apiToken: '',
+  userId: null,
+  syncProgress: true,
+  syncStatus: true,
+  syncRating: true,
+  syncHighlights: true,
+  linkedBooks: {},
+};
+
 export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   keepLogin: false,
   autoUpload: true,
@@ -89,6 +101,7 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   libraryColumns: 6,
 
   kosync: DEFAULT_KOSYNC_SETTINGS,
+  hardcover: DEFAULT_HARDCOVER_SETTINGS,
   aiSettings: DEFAULT_AI_SETTINGS,
 
   lastSyncedAtBooks: 0,

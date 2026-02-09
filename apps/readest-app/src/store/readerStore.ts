@@ -21,6 +21,7 @@ import { useSettingsStore } from './settingsStore';
 import { useBookDataStore } from './bookDataStore';
 import { useLibraryStore } from './libraryStore';
 import { uniqueId } from '@/utils/misc';
+import { eventDispatcher } from '@/utils/event';
 
 interface ViewState {
   /* Unique key for each book view */
@@ -304,9 +305,9 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
         // determine new reading status
         let newReadingStatus = existingBook.readingStatus;
 
-        // auto-clear 'unread' status when user starts reading (progress changes)
-        if (existingBook.readingStatus === 'unread') {
-          newReadingStatus = undefined;
+        // auto-set 'reading' status when user starts reading (progress changes)
+        if (!existingBook.readingStatus || existingBook.readingStatus === 'unread') {
+          newReadingStatus = 'reading';
         }
 
         // auto mark as 'finished' when progress reaches 100%
@@ -321,6 +322,11 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
           updatedAt: Date.now(),
         };
         setLibrary(updatedLibrary);
+
+        // Auto-sync status to Hardcover when reading status changes
+        if (newReadingStatus !== existingBook.readingStatus) {
+          eventDispatcher.dispatch('hardcover-sync-status', { bookKey: key });
+        }
       }
 
       const oldConfig = bookData.config;

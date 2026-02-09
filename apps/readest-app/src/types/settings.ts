@@ -5,6 +5,7 @@ import { HighlightColor, HighlightStyle, ViewSettings } from './book';
 import { OPDSCatalog } from './opds';
 import type { AISettings } from '@/services/ai/types';
 import type { NotebookTab } from '@/store/notebookStore';
+import type { HardcoverSettings } from './hardcover';
 
 export type ThemeType = 'light' | 'dark' | 'auto';
 export type LibraryViewModeType = 'grid' | 'list';
@@ -97,6 +98,7 @@ export interface SystemSettings {
   opdsCatalogs: OPDSCatalog[];
 
   kosync: KOSyncSettings;
+  hardcover: HardcoverSettings;
 
   lastSyncedAtBooks: number;
   lastSyncedAtConfigs: number;

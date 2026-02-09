@@ -1,0 +1,59 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Tauri: Android Debug APK (aarch64)",
+      "type": "shell",
+      "command": "pnpm tauri android build --debug --target aarch64",
+      "options": {
+        "env": {
+          "ANDROID_NDK_HOME": "${env:ANDROID_HOME}/ndk/27.0.12077973"
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Tauri: Android Release APK (aarch64)",
+      "type": "shell",
+      "command": "pnpm tauri android build --target aarch64",
+      "options": {
+        "env": {
+          "ANDROID_NDK_HOME": "${env:ANDROID_HOME}/ndk/27.0.12077973"
+        }
+      },
+      "group": "build",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Tauri: Android Debug APK (all targets)",
+      "type": "shell",
+      "command": "pnpm tauri android build --debug",
+      "options": {
+        "env": {
+          "ANDROID_NDK_HOME": "${env:ANDROID_HOME}/ndk/27.0.12077973"
+        }
+      },
+      "group": "build",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    }
+  ]
+}

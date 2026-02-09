@@ -19,6 +19,7 @@ import { DOWNLOAD_READEST_URL } from '@/services/constants';
 import { navigateToLogin } from '@/utils/nav';
 import { saveSysSettings } from '@/helpers/settings';
 import { setKOSyncSettingsWindowVisible } from '@/app/reader/components/KOSyncSettings';
+import { setHardcoverSettingsWindowVisible } from '@/app/reader/components/HardcoverSettings';
 import { setProofreadRulesVisibility } from '@/app/reader/components/ProofreadRules';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
 import useBooksManager from '../../hooks/useBooksManager';
@@ -85,6 +86,15 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
   };
   const showKoSyncSettingsWindow = () => {
     setKOSyncSettingsWindowVisible(true);
+    setIsDropdownOpen?.(false);
+  };
+  const showHardcoverSettingsWindow = () => {
+    setHardcoverSettingsWindowVisible(true);
+    setIsDropdownOpen?.(false);
+  };
+  const handleSyncToHardcover = () => {
+    eventDispatcher.dispatch('hardcover-sync-status', { bookKey: sideBarBookKey });
+    eventDispatcher.dispatch('hardcover-sync-highlights', { bookKey: sideBarBookKey });
     setIsDropdownOpen?.(false);
   };
   const showProofreadRulesWindow = () => {
@@ -166,6 +176,10 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
           <MenuItem label={_('Push Progress')} onClick={handlePushKOSync} />
           <MenuItem label={_('Pull Progress')} onClick={handlePullKOSync} />
         </>
+      )}
+      <MenuItem label={_('Hardcover Sync')} onClick={showHardcoverSettingsWindow} />
+      {settings.hardcover.enabled && (
+        <MenuItem label={_('Sync to Hardcover')} onClick={handleSyncToHardcover} />
       )}
       {appService?.isDesktopApp && (
         <>

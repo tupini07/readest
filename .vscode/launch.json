@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Build Android Debug APK",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "Tauri: Android Debug APK (aarch64)",
+      "presentation": {
+        "hidden": false,
+        "group": "Android",
+        "order": 1
+      }
+    },
+    {
+      "name": "Build Android Release APK",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "Tauri: Android Release APK (aarch64)",
+      "presentation": {
+        "hidden": false,
+        "group": "Android",
+        "order": 2
+      }
+    }
+  ]
+}

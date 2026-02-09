@@ -24,6 +24,9 @@ import { eventDispatcher } from '@/utils/event';
 import { getMaxInlineSize } from '@/utils/config';
 import { saveViewSettings } from '@/helpers/settings';
 import { tauriHandleToggleFullScreen } from '@/utils/window';
+import { HardcoverStatusId } from '@/types/hardcover';
+import { setHardcoverSettingsWindowVisible } from '@/app/reader/components/HardcoverSettings';
+import { getHardcoverCachedState } from '@/app/reader/hooks/useHardcover';
 import MenuItem from '@/components/MenuItem';
 import Menu from '@/components/Menu';
 
@@ -38,7 +41,7 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
   const { user } = useAuth();
   const { envConfig, appService } = useEnv();
   const { getConfig, getBookData } = useBookDataStore();
-  const { setSettingsDialogOpen, setSettingsDialogBookKey } = useSettingsStore();
+  const { settings, setSettingsDialogOpen, setSettingsDialogBookKey } = useSettingsStore();
   const { getView, getViewSettings, getViewState, setViewSettings } = useReaderStore();
   const config = getConfig(bookKey)!;
   const bookData = getBookData(bookKey)!;
@@ -96,6 +99,58 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
   const handleStartRSVP = () => {
     setIsDropdownOpen?.(false);
     eventDispatcher.dispatch('rsvp-start', { bookKey });
+  };
+
+  // ── Hardcover ──────────────────────────────────────────────────────
+
+  const hardcoverEnabled = settings.hardcover.enabled;
+  const hardcoverLinked = !!(
+    bookData.book?.hash && settings.hardcover.linkedBooks[bookData.book.hash]
+  );
+
+  // Read initial state from cache (event may have fired before ViewMenu mounted)
+  const cachedState = getHardcoverCachedState(bookKey);
+  const [hardcoverRating, setHardcoverRating] = useState(cachedState.rating ?? 0);
+  const [hardcoverStatusId, setHardcoverStatusId] = useState<number | null>(cachedState.statusId);
+  const [showRatingPicker, setShowRatingPicker] = useState(false);
+
+  // Listen for userBook changes to display current rating & status
+  useEffect(() => {
+    const handleUserBookUpdate = (event: CustomEvent) => {
+      if (event.detail.bookKey !== bookKey) return;
+      if (event.detail.rating !== undefined) setHardcoverRating(event.detail.rating ?? 0);
+      if (event.detail.statusId !== undefined) setHardcoverStatusId(event.detail.statusId);
+    };
+    eventDispatcher.on('hardcover-userbook-updated', handleUserBookUpdate);
+    return () => {
+      eventDispatcher.off('hardcover-userbook-updated', handleUserBookUpdate);
+    };
+  }, [bookKey]);
+
+  const handleHardcoverStatus = (statusId: HardcoverStatusId) => {
+    eventDispatcher.dispatch('hardcover-sync-status', { bookKey, statusId });
+    setIsDropdownOpen?.(false);
+  };
+
+  const handleHardcoverRating = (rating: number) => {
+    setHardcoverRating(rating);
+    setShowRatingPicker(false);
+    eventDispatcher.dispatch('hardcover-sync-rating', { bookKey, rating });
+  };
+
+  const handleHardcoverSyncHighlights = () => {
+    eventDispatcher.dispatch('hardcover-sync-highlights', { bookKey });
+    setIsDropdownOpen?.(false);
+  };
+
+  const handleHardcoverSyncProgress = () => {
+    eventDispatcher.dispatch('hardcover-sync-progress', { bookKey });
+    setIsDropdownOpen?.(false);
+  };
+
+  const handleOpenHardcoverSettings = () => {
+    setHardcoverSettingsWindowVisible(true);
+    setIsDropdownOpen?.(false);
   };
 
   useEffect(() => {
@@ -307,6 +362,103 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
         iconClassName={user && viewState?.syncing ? 'animate-reverse-spin' : ''}
         onClick={handleSync}
       />
+
+      {hardcoverEnabled && (
+        <>
+          <hr aria-hidden='true' className='border-base-300 my-1' />
+
+          {hardcoverLinked ? (
+            <>
+              <MenuItem label={_('Hardcover Status')}>
+                <ul>
+                  <MenuItem
+                    label={_('Want to Read')}
+                    Icon={hardcoverStatusId === HardcoverStatusId.WantToRead ? MdCheck : undefined}
+                    onClick={() => handleHardcoverStatus(HardcoverStatusId.WantToRead)}
+                  />
+                  <MenuItem
+                    label={_('Currently Reading')}
+                    Icon={hardcoverStatusId === HardcoverStatusId.Reading ? MdCheck : undefined}
+                    onClick={() => handleHardcoverStatus(HardcoverStatusId.Reading)}
+                  />
+                  <MenuItem
+                    label={_('Read')}
+                    Icon={hardcoverStatusId === HardcoverStatusId.Finished ? MdCheck : undefined}
+                    onClick={() => handleHardcoverStatus(HardcoverStatusId.Finished)}
+                  />
+                  <MenuItem
+                    label={_('Did Not Finish')}
+                    Icon={hardcoverStatusId === HardcoverStatusId.DNF ? MdCheck : undefined}
+                    onClick={() => handleHardcoverStatus(HardcoverStatusId.DNF)}
+                  />
+                </ul>
+              </MenuItem>
+
+              <div className='relative'>
+                <div
+                  className='flex cursor-pointer items-center justify-between px-3 py-1.5 hover:bg-base-200 rounded'
+                  onClick={() => setShowRatingPicker(!showRatingPicker)}
+                >
+                  <span className='text-base-content/80 text-sm'>{_('Hardcover Rating')}</span>
+                  <span className='text-base-content/60 text-sm'>
+                    {hardcoverRating > 0 ? `${hardcoverRating} / 5` : _('Not rated')}
+                  </span>
+                </div>
+                {showRatingPicker && (
+                  <div className='bg-base-100 border-base-300 rounded border p-2 mx-2 mb-1'>
+                    <div className='grid grid-cols-5 gap-1'>
+                      {Array.from({ length: 10 }, (_, i) => (i + 1) * 0.5).map((val) => (
+                        <button
+                          key={val}
+                          type='button'
+                          className={clsx(
+                            'rounded px-1 py-0.5 text-center text-xs transition-colors',
+                            val === hardcoverRating
+                              ? 'bg-amber-400 text-white font-semibold'
+                              : 'hover:bg-base-200 text-base-content/70',
+                          )}
+                          onClick={() => handleHardcoverRating(val)}
+                        >
+                          {val}
+                        </button>
+                      ))}
+                    </div>
+                    {hardcoverRating > 0 && (
+                      <button
+                        type='button'
+                        className='text-error/70 hover:text-error mt-1 w-full text-center text-xs'
+                        onClick={() => handleHardcoverRating(0)}
+                      >
+                        {_('Clear rating')}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <MenuItem
+                label={_('Sync Progress')}
+                onClick={handleHardcoverSyncProgress}
+              />
+
+              <MenuItem
+                label={_('Sync Highlights')}
+                onClick={handleHardcoverSyncHighlights}
+              />
+            </>
+          ) : (
+            <MenuItem
+              label={_('Link to Hardcover')}
+              onClick={handleOpenHardcoverSettings}
+            />
+          )}
+
+          <MenuItem
+            label={_('Hardcover Settings')}
+            onClick={handleOpenHardcoverSettings}
+          />
+        </>
+      )}
 
       <hr aria-hidden='true' className='border-base-300 my-1' />
 
