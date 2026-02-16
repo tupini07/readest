@@ -69,7 +69,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ hashFiles('apps/readest-app/src-tauri/Cargo.lock') }}
+          key: gradle-${{ hashFiles('apps/readest-app/src-tauri/gen/android/**/build.gradle.kts', 'apps/readest-app/src-tauri/gen/android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: gradle-
 
       - name: cache Next.js build
