@@ -1,0 +1,100 @@
+version: "3"
+
+vars:
+  APP_DIR: apps/readest-app
+  NDK_VERSION: 27.0.12077973
+
+tasks:
+  install:
+    desc: Install all dependencies
+    cmds:
+      - pnpm install
+
+  setup:
+    desc: Install deps and set up vendors
+    cmds:
+      - task: install
+      - pnpm --filter @readest/readest-app setup-vendors
+
+  dev:
+    desc: Run the Tauri desktop app in dev mode
+    dir: "{{.APP_DIR}}"
+    cmds:
+      - pnpm tauri dev
+
+  dev-web:
+    desc: Run the web app in dev mode
+    cmds:
+      - pnpm dev-web
+
+  dev-android:
+    desc: Run the Android app in dev mode
+    dir: "{{.APP_DIR}}"
+    env:
+      ANDROID_NDK_HOME: "{{.ANDROID_HOME}}/ndk/{{.NDK_VERSION}}"
+    cmds:
+      - pnpm tauri android dev
+
+  build:
+    desc: Build the Tauri desktop app
+    dir: "{{.APP_DIR}}"
+    cmds:
+      - pnpm tauri build
+
+  build-android:
+    desc: Build Android release APK (aarch64)
+    dir: "{{.APP_DIR}}"
+    env:
+      ANDROID_NDK_HOME: "{{.ANDROID_HOME}}/ndk/{{.NDK_VERSION}}"
+    cmds:
+      - pnpm tauri android build --target aarch64
+
+  build-android-debug:
+    desc: Build Android debug APK (aarch64)
+    dir: "{{.APP_DIR}}"
+    env:
+      ANDROID_NDK_HOME: "{{.ANDROID_HOME}}/ndk/{{.NDK_VERSION}}"
+    cmds:
+      - pnpm tauri android build --debug --target aarch64
+
+  android-init:
+    desc: Initialize Android project (run after clean or first checkout)
+    dir: "{{.APP_DIR}}"
+    cmds:
+      - rm -rf src-tauri/gen/android
+      - pnpm tauri android init
+      - pnpm tauri icon ../../data/icons/readest-book.png
+      - git checkout .
+
+  lint:
+    desc: Run ESLint
+    dir: "{{.APP_DIR}}"
+    cmds:
+      - pnpm lint
+
+  clippy:
+    desc: Run Rust clippy checks
+    dir: "{{.APP_DIR}}"
+    cmds:
+      - pnpm clippy
+
+  test:
+    desc: Run tests
+    dir: "{{.APP_DIR}}"
+    cmds:
+      - pnpm test
+
+  format:
+    desc: Format all files with Prettier
+    cmds:
+      - pnpm format
+
+  format-check:
+    desc: Check formatting
+    cmds:
+      - pnpm format:check
+
+  sync-upstream:
+    desc: Pull and merge latest changes from upstream
+    cmds:
+      - git pull --no-rebase upstream main --no-edit
