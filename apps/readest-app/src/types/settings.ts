@@ -14,6 +14,7 @@ export const LibrarySortByType = {
   Author: 'author',
   Updated: 'updated',
   Created: 'created',
+  Series: 'series',
   Size: 'size',
   Format: 'format',
   Published: 'published',
@@ -96,6 +97,9 @@ export interface SystemSettings {
   customFonts: CustomFont[];
   customTextures: CustomTexture[];
   opdsCatalogs: OPDSCatalog[];
+  metadataSeriesCollapsed: boolean;
+  metadataOthersCollapsed: boolean;
+  metadataDescriptionCollapsed: boolean;
 
   kosync: KOSyncSettings;
   hardcover: HardcoverSettings;

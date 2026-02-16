@@ -976,7 +976,6 @@
   "Unable to start RSVP": "Αδυναμία έναρξης RSVP",
   "RSVP not supported for PDF": "Το RSVP δεν υποστηρίζεται για PDF",
   "Select Chapter": "Επιλογή Κεφαλαίου",
-  "{{number}} WPM": "{{number}} WPM",
   "Context": "Πλαίσιο",
   "Ready": "Έτοιμο",
   "Chapter Progress": "Πρόοδος Κεφαλαίου",
@@ -1031,5 +1030,6 @@
   "Authors": "Συγγραφείς",
   "Books": "Βιβλία",
   "Groups": "Ομάδες",
-  "Back to TTS Location": "Επιστροφή στην τοποθεσία TTS"
+  "Back to TTS Location": "Επιστροφή στην τοποθεσία TTS",
+  "Metadata": "Μεταδεδομένα"
 }

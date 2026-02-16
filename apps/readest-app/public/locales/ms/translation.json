@@ -964,7 +964,6 @@
   "Unable to start RSVP": "Tidak dapat memulakan RSVP",
   "RSVP not supported for PDF": "RSVP tidak disokong untuk PDF",
   "Select Chapter": "Pilih Bab",
-  "{{number}} WPM": "{{number}} WPM",
   "Context": "Konteks",
   "Ready": "Sedia",
   "Chapter Progress": "Kemajuan Bab",
@@ -1019,5 +1018,6 @@
   "Authors": "Penulis",
   "Books": "Buku",
   "Groups": "Kumpulan",
-  "Back to TTS Location": "Kembali ke Lokasi TTS"
+  "Back to TTS Location": "Kembali ke Lokasi TTS",
+  "Metadata": "Metadata"
 }

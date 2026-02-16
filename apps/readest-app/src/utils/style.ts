@@ -107,6 +107,19 @@ const getFontStyles = (
   return fontStyles;
 };
 
+const getEinkSelectionStyles = () => {
+  return `
+    ::selection {
+      color: var(--theme-bg-color);
+      background: var(--theme-fg-color);
+    }
+    ::-moz-selection {
+      color: var(--theme-bg-color);
+      background: var(--theme-fg-color);
+    }
+  `;
+};
+
 const getColorStyles = (
   overrideColor: boolean,
   invertImgColorInDark: boolean,
@@ -127,6 +140,7 @@ const getColorStyles = (
     html, body {
       color: ${fg};
     }
+    ${isEink ? getEinkSelectionStyles() : ''}
     html[has-background], body[has-background] {
       --background-set: var(--theme-bg-color);
     }
@@ -259,9 +273,13 @@ const getLayoutStyles = (
     zoom: ${zoomLevel};
   }
   svg, img {
-    height: auto;
-    width: auto;
     background-color: transparent !important;
+  }
+  svg:where(:not([width])), img:where(:not([width])) {
+    width: auto;
+  }
+  svg:where(:not([height])), img:where(:not([height])) {
+    height: auto;
   }
   figure > div:has(img) {
     height: auto !important;
@@ -841,7 +859,12 @@ export const applyTableStyle = (document: Document) => {
     const computedTableStyle = window.getComputedStyle(table);
     const computedWidth = computedTableStyle.width;
     if (computedWidth && computedWidth !== 'auto' && computedWidth !== '0px') {
-      table.style.width = `calc(min(${computedWidth}, var(--available-width) * 1px))`;
+      const widthValue = parseFloat(computedWidth);
+      const widthUnit = computedWidth.replace(widthValue.toString(), '').trim();
+      if (widthUnit !== '%') {
+        // Workaround for hardcoded table layout, closes #3205
+        table.style.width = `calc(min(${computedWidth}, var(--available-width)))`;
+      }
     }
     if (totalTableWidth > 0) {
       const scale = `calc(min(1, var(--available-width) / ${totalTableWidth}))`;
@@ -875,6 +898,7 @@ export const applyFixedlayoutStyles = (
     themeCode = getThemeCode();
   }
   const { bg, fg, primary, isDarkMode } = themeCode;
+  const isEink = viewSettings.isEink;
   const overrideColor = viewSettings.overrideColor!;
   const invertImgColorInDark = viewSettings.invertImgColorInDark!;
   const darkMixBlendMode = bg === '#000000' ? 'luminosity' : 'overlay';
@@ -896,6 +920,7 @@ export const applyFixedlayoutStyles = (
       position: relative;
       background-color: var(--theme-bg-color);
     }
+    ${isEink ? getEinkSelectionStyles() : ''}
     #canvas {
       display: inline-block;
       width: fit-content;

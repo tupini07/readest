@@ -1000,7 +1000,6 @@
   "Unable to start RSVP": "Nie można uruchomić RSVP",
   "RSVP not supported for PDF": "RSVP nie jest obsługiwane dla PDF",
   "Select Chapter": "Wybierz rozdział",
-  "{{number}} WPM": "{{number}} WPM",
   "Context": "Kontekst",
   "Ready": "Gotowy",
   "Chapter Progress": "Postęp rozdziału",
@@ -1055,5 +1054,6 @@
   "Authors": "Autorzy",
   "Books": "Książki",
   "Groups": "Grupy",
-  "Back to TTS Location": "Powrót do lokalizacji TTS"
+  "Back to TTS Location": "Powrót do lokalizacji TTS",
+  "Metadata": "Metadane"
 }

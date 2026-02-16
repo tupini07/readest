@@ -964,7 +964,6 @@
   "Unable to start RSVP": "ไม่สามารถเริ่ม RSVP ได้",
   "RSVP not supported for PDF": "ไม่รองรับ RSVP สำหรับ PDF",
   "Select Chapter": "เลือกบท",
-  "{{number}} WPM": "{{number}} WPM",
   "Context": "บริบท",
   "Ready": "พร้อม",
   "Chapter Progress": "ความคืบหน้าของบท",
@@ -1019,5 +1018,6 @@
   "Authors": "ผู้เขียน",
   "Books": "หนังสือ",
   "Groups": "กลุ่ม",
-  "Back to TTS Location": "กลับไปยังตำแหน่ง TTS"
+  "Back to TTS Location": "กลับไปยังตำแหน่ง TTS",
+  "Metadata": "เมทาดาตา"
 }

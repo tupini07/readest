@@ -976,7 +976,6 @@
   "Unable to start RSVP": "RSVP-ஐத் தொடங்க முடியவில்லை",
   "RSVP not supported for PDF": "PDF-க்கு RSVP ஆதரவு இல்லை",
   "Select Chapter": "அத்தியாயத்தைத் தேர்ந்தெடு",
-  "{{number}} WPM": "{{number}} WPM",
   "Context": "சூழல்",
   "Ready": "தயார்",
   "Chapter Progress": "அத்தியாய முன்னேற்றம்",
@@ -1031,5 +1030,6 @@
   "Authors": "ஆசிரியர்கள்",
   "Books": "புத்தகங்கள்",
   "Groups": "குழுக்கள்",
-  "Back to TTS Location": "TTS இடத்திற்குத் திரும்பு"
+  "Back to TTS Location": "TTS இடத்திற்குத் திரும்பு",
+  "Metadata": "மெட்டாடேட்டா"
 }

@@ -964,7 +964,6 @@
   "Unable to start RSVP": "無法啟動 RSVP",
   "RSVP not supported for PDF": "PDF 不支援 RSVP",
   "Select Chapter": "選擇章節",
-  "{{number}} WPM": "{{number}} WPM",
   "Context": "上下文",
   "Ready": "準備就緒",
   "Chapter Progress": "章節進度",
@@ -1019,5 +1018,6 @@
   "Authors": "作者",
   "Books": "書籍",
   "Groups": "分組",
-  "Back to TTS Location": "回到朗讀位置"
+  "Back to TTS Location": "回到朗讀位置",
+  "Metadata": "元數據"
 }

@@ -1,5 +1,6 @@
 import { BookFormat } from '@/types/book';
-import { Contributor, Identifier, LanguageMap } from '@/utils/book';
+import { Collection, Contributor, Identifier, LanguageMap } from '@/utils/book';
+import { configureZip } from '@/utils/zip';
 import * as epubcfi from 'foliate-js/epubcfi.js';
 
 export const CFI = epubcfi;
@@ -47,6 +48,10 @@ export type BookMetadata = {
   subject?: string | string[] | Contributor;
   identifier?: string;
   altIdentifier?: string | string[] | Identifier;
+  belongsTo?: {
+    collection?: Array<Collection> | Collection;
+    series?: Array<Collection> | Collection;
+  };
 
   subtitle?: string;
   series?: string;
@@ -144,10 +149,9 @@ export class DocumentLoader {
       return null;
     };
 
-    const { configure, ZipReader, BlobReader, TextWriter, BlobWriter } =
-      await import('@zip.js/zip.js');
+    await configureZip();
+    const { ZipReader, BlobReader, TextWriter, BlobWriter } = await import('@zip.js/zip.js');
     type Entry = import('@zip.js/zip.js').Entry;
-    configure({ useWebWorkers: false, useCompressionStream: false });
     const reader = new ZipReader(new BlobReader(this.file));
     const entries = await reader.getEntries();
     const map = new Map(entries.map((entry) => [entry.filename, entry]));
