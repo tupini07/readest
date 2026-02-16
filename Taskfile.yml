@@ -140,4 +140,4 @@ tasks:
     desc: Trigger the Android APK release workflow on GitHub
     cmds:
       - git push origin hardcover-sync
-      - gh workflow run release-android.yml --ref hardcover-sync
+      - gh workflow run release-android.yml --ref hardcover-sync --repo tupini07/readest
