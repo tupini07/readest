@@ -20,6 +20,7 @@ import { navigateToLogin } from '@/utils/nav';
 import { saveSysSettings } from '@/helpers/settings';
 import { setKOSyncSettingsWindowVisible } from '@/app/reader/components/KOSyncSettings';
 import { setHardcoverSettingsWindowVisible } from '@/app/reader/components/HardcoverSettings';
+import { setReadeckSettingsWindowVisible } from '@/app/reader/components/ReadeckSettings';
 import { setProofreadRulesVisibility } from '@/app/reader/components/ProofreadRules';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
 import useBooksManager from '../../hooks/useBooksManager';
@@ -90,6 +91,10 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
   };
   const showHardcoverSettingsWindow = () => {
     setHardcoverSettingsWindowVisible(true);
+    setIsDropdownOpen?.(false);
+  };
+  const showReadeckSettingsWindow = () => {
+    setReadeckSettingsWindowVisible(true);
     setIsDropdownOpen?.(false);
   };
   const handleSyncToHardcover = () => {
@@ -181,6 +186,7 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
       {settings.hardcover.enabled && (
         <MenuItem label={_('Sync to Hardcover')} onClick={handleSyncToHardcover} />
       )}
+      <MenuItem label={_('Readeck')} onClick={showReadeckSettingsWindow} />
       {appService?.isDesktopApp && (
         <>
           <hr aria-hidden='true' className='border-base-200 my-1' />

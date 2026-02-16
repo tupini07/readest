@@ -23,6 +23,7 @@ import { tauriHandleSetAlwaysOnTop, tauriHandleToggleFullScreen } from '@/utils/
 import { optInTelemetry, optOutTelemetry } from '@/utils/telemetry';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
 import { setMigrateDataDirDialogVisible } from '@/app/library/components/MigrateDataWindow';
+import { setReadeckSettingsWindowVisible } from '@/app/reader/components/ReadeckSettings';
 import { requestStoragePermission } from '@/utils/permission';
 import { saveSysSettings } from '@/helpers/settings';
 import { selectDirectory } from '@/utils/bridge';
@@ -307,6 +308,14 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
         label={_('Auto Upload Books to Cloud')}
         toggled={isAutoUpload}
         onClick={toggleAutoUploadBooks}
+      />
+
+      <MenuItem
+        label={settings.readeck?.enabled ? _('Readeck (Connected)') : _('Readeck')}
+        onClick={() => {
+          setReadeckSettingsWindowVisible(true);
+          setIsDropdownOpen?.(false);
+        }}
       />
 
       {isTauriAppPlatform() && !appService?.isMobile && (

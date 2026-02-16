@@ -6,6 +6,7 @@ import { OPDSCatalog } from './opds';
 import type { AISettings } from '@/services/ai/types';
 import type { NotebookTab } from '@/store/notebookStore';
 import type { HardcoverSettings } from './hardcover';
+import type { ReadeckSettings } from './readeck';
 
 export type ThemeType = 'light' | 'dark' | 'auto';
 export type LibraryViewModeType = 'grid' | 'list';
@@ -103,6 +104,7 @@ export interface SystemSettings {
 
   kosync: KOSyncSettings;
   hardcover: HardcoverSettings;
+  readeck: ReadeckSettings;
 
   lastSyncedAtBooks: number;
   lastSyncedAtConfigs: number;

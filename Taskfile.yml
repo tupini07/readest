@@ -99,6 +99,43 @@ tasks:
     cmds:
       - git pull --no-rebase upstream main --no-edit
 
+  emulator:
+    desc: Start the Android emulator and install/launch the debug APK
+    cmds:
+      - |
+        ADB="$ANDROID_HOME/platform-tools/adb"
+        EMU="$ANDROID_HOME/emulator/emulator"
+        if ! "$ADB" devices 2>/dev/null | grep -q "emulator-"; then
+          AVD=$("$EMU" -list-avds | head -1)
+          if [ -z "$AVD" ]; then echo "No AVDs found. Create one with avdmanager."; exit 1; fi
+          echo "Starting emulator ($AVD)..."
+          "$EMU" -avd "$AVD" &
+          "$ADB" wait-for-device
+          sleep 5
+          echo "Emulator ready."
+        else
+          echo "Emulator already running."
+        fi
+      - task: emulator-install
+
+  emulator-install:
+    desc: Install debug APK and launch app on running emulator
+    cmds:
+      - $ANDROID_HOME/platform-tools/adb install -r {{.APP_DIR}}/src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+      - $ANDROID_HOME/platform-tools/adb shell am start -n "com.bilingify.readest/.MainActivity"
+
+  emulator-kill:
+    desc: Kill the running Android emulator
+    cmds:
+      - |
+        ADB="$ANDROID_HOME/platform-tools/adb"
+        if "$ADB" devices 2>/dev/null | grep -q "emulator-"; then
+          "$ADB" -s emulator-5554 emu kill
+          echo "Emulator stopped."
+        else
+          echo "No emulator running."
+        fi
+
   release-android:
     desc: Trigger the Android APK release workflow on GitHub
     cmds:

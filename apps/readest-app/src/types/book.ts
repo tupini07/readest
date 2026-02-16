@@ -53,6 +53,7 @@ export interface Book {
   downloadedAt?: number | null;
   coverDownloadedAt?: number | null;
   syncedAt?: number | null;
+  readeckId?: string; // Readeck bookmark ID for syncing
 
   lastUpdated?: number; // deprecated in favor of updatedAt
   progress?: [number, number]; // Add progress field: [current, total], 1-based page number

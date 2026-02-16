@@ -23,6 +23,7 @@ import {
   SystemSettings,
 } from '@/types/settings';
 import { HardcoverSettings } from '@/types/hardcover';
+import { ReadeckSettings } from '@/types/readeck';
 import { UserStorageQuota, UserDailyTranslationQuota } from '@/types/quota';
 import { getDefaultMaxBlockSize, getDefaultMaxInlineSize } from '@/utils/config';
 import { stubTranslation as _ } from '@/utils/misc';
@@ -76,6 +77,14 @@ export const DEFAULT_HARDCOVER_SETTINGS: HardcoverSettings = {
   linkedBooks: {},
 };
 
+export const DEFAULT_READECK_SETTINGS: ReadeckSettings = {
+  enabled: false,
+  serverUrl: '',
+  apiToken: '',
+  autoArchive: false,
+  syncIntervalMinutes: 30,
+};
+
 export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   keepLogin: false,
   autoUpload: true,
@@ -106,6 +115,7 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
 
   kosync: DEFAULT_KOSYNC_SETTINGS,
   hardcover: DEFAULT_HARDCOVER_SETTINGS,
+  readeck: DEFAULT_READECK_SETTINGS,
   aiSettings: DEFAULT_AI_SETTINGS,
 
   lastSyncedAtBooks: 0,

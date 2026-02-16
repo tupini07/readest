@@ -21,6 +21,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useEinkMode } from '@/hooks/useEinkMode';
 import { useKOSync } from '../hooks/useKOSync';
 import { useHardcover } from '../hooks/useHardcover';
+import { useReadeck } from '../hooks/useReadeck';
 import {
   applyFixedlayoutStyles,
   applyImageStyle,
@@ -119,6 +120,7 @@ const FoliateViewer: React.FC<{
   useBookCoverAutoSave(bookKey);
   const { syncState, conflictDetails, resolveWithLocal, resolveWithRemote } = useKOSync(bookKey);
   useHardcover(bookKey);
+  useReadeck(bookKey);
   useTextTranslation(bookKey, viewRef.current);
 
   const progressRelocateHandler = (event: Event) => {
