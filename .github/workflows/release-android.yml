@@ -9,11 +9,10 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v6
-      - name: get version
+      - name: generate version from timestamp
         id: version
         run: |
-          VERSION=$(node -p "require('./apps/readest-app/package.json').version")
+          VERSION=$(date -u +'%Y.%-m.%-d.%-H%M')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
   build-android:
