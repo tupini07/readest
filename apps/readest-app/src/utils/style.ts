@@ -148,6 +148,9 @@ const getColorStyles = (
       background-color: var(--theme-bg-color, transparent);
       background: var(--background-set, none);
     }
+    body {
+      ${isEink ? `background-color: ${bg} !important;` : ''}
+    }
     section, aside, blockquote, article, nav, header, footer, main, figure,
     div, p, font, h1, h2, h3, h4, h5, h6, li, span {
       ${overrideColor ? `background-color: ${bg} !important;` : ''}
@@ -168,6 +171,9 @@ const getColorStyles = (
       ${isDarkMode && invertImgColorInDark ? 'filter: invert(100%);' : ''}
       ${!isDarkMode && overrideColor ? 'mix-blend-mode: multiply;' : ''}
     }
+    svg, img {
+      ${overrideColor ? `background-color: transparent !important;` : ''};
+    }
     /* horizontal rule #1649 */
     *:has(> hr.background-img):not(body) {
       background-color: ${bg};
@@ -177,7 +183,7 @@ const getColorStyles = (
     }
     /* inline images */
     *:has(> img.has-text-siblings):not(body) {
-      background-color: ${bg};
+      ${overrideColor ? `background-color: ${bg};` : ''}
     }
     p img.has-text-siblings, span img.has-text-siblings, sup img.has-text-siblings {
       mix-blend-mode: ${isDarkMode ? 'screen' : 'multiply'};
@@ -185,6 +191,7 @@ const getColorStyles = (
     table {
       overflow: auto;
       table-layout: fixed;
+      display: table !important;
     }
     /* code */
     body.theme-dark code {
@@ -271,9 +278,6 @@ const getLayoutStyles = (
   body {
     overflow: unset;
     zoom: ${zoomLevel};
-  }
-  svg, img {
-    background-color: transparent !important;
   }
   svg:where(:not([width])), img:where(:not([width])) {
     width: auto;
@@ -736,6 +740,21 @@ export const transformStylesheet = (css: string, vw: number, vh: number, vertica
     return selector + block;
   });
 
+  // unset font-family for body when set to serif or sans-serif
+  css = css.replace(ruleRegex, (_, selector, block) => {
+    if (/\bbody\b/i.test(selector)) {
+      const hasSerifFont = /font-family\s*:\s*serif\s*(?:;|\}|$)/.test(block);
+      const hasSansSerifFont = /font-family\s*:\s*sans-serif\s*(?:;|\}|$)/.test(block);
+      if (hasSerifFont) {
+        block = block.replace(/font-family\s*:\s*serif\s*(;|\}|$)/gi, 'font-family: unset$1');
+      }
+      if (hasSansSerifFont) {
+        block = block.replace(/font-family\s*:\s*sans-serif\s*(;|\}|$)/gi, 'font-family: unset$1');
+      }
+    }
+    return selector + block;
+  });
+
   // replace absolute font sizes with rem units
   // replace vw and vh as they cause problems with layout
   // replace hardcoded colors
@@ -761,7 +780,15 @@ export const transformStylesheet = (css: string, vw: number, vh: number, vertica
     })
     .replace(/(\d*\.?\d+)vw/gi, (_, d) => (parseFloat(d) * vw) / 100 + 'px')
     .replace(/(\d*\.?\d+)vh/gi, (_, d) => (parseFloat(d) * vh) / 100 + 'px')
-    .replace(/([\s;])font-family\s*:\s*monospace/gi, '$1font-family: var(--monospace)')
+    .replace(/([\s;])-webkit-user-select\s*:\s*none/gi, '$1-webkit-user-select: unset')
+    .replace(/([\s;])-moz-user-select\s*:\s*none/gi, '$1-moz-user-select: unset')
+    .replace(/([\s;])-ms-user-select\s*:\s*none/gi, '$1-ms-user-select: unset')
+    .replace(/([\s;])-o-user-select\s*:\s*none/gi, '$1-o-user-select: unset')
+    .replace(/([\s;])user-select\s*:\s*none/gi, '$1user-select: unset')
+    .replace(/(font-family\s*:[^;]*?)\bsans-serif\b/gi, '$1READEST_SS_PLACEHOLDER')
+    .replace(/(font-family\s*:[^;]*?)\bserif\b(?!-)/gi, '$1var(--serif)')
+    .replace(/READEST_SS_PLACEHOLDER/g, 'var(--sans-serif)')
+    .replace(/(font-family\s*:[^;]*?)\bmonospace\b/gi, '$1var(--monospace)')
     .replace(/([\s;])font-weight\s*:\s*normal/gi, '$1font-weight: var(--font-weight)')
     .replace(/([\s;])color\s*:\s*black/gi, '$1color: var(--theme-fg-color)')
     .replace(/([\s;])color\s*:\s*#000000/gi, '$1color: var(--theme-fg-color)')
@@ -866,9 +893,15 @@ export const applyTableStyle = (document: Document) => {
         table.style.width = `calc(min(${computedWidth}, var(--available-width)))`;
       }
     }
+    const parentWidth = window.getComputedStyle(parent as Element).width;
+    const parentContainerWidth = parseFloat(parentWidth) || 0;
     if (totalTableWidth > 0) {
       const scale = `calc(min(1, var(--available-width) / ${totalTableWidth}))`;
       table.style.transformOrigin = 'left top';
+      table.style.transform = `scale(${scale})`;
+    } else if (parentContainerWidth > 0) {
+      const scale = `calc(min(1, var(--available-width) / ${parentContainerWidth}))`;
+      table.style.transformOrigin = 'center top';
       table.style.transform = `scale(${scale})`;
     }
   });

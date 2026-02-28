@@ -86,6 +86,7 @@ export interface BookNote {
   id: string;
   type: BookNoteType;
   cfi: string;
+  page?: number;
   text?: string;
   style?: HighlightStyle;
   color?: HighlightColor;
@@ -243,6 +244,7 @@ export interface NoteExportConfig {
   includeChapterTitles: boolean;
   includeQuotes: boolean;
   includeNotes: boolean;
+  includePageNumber: boolean;
   includeTimestamp: boolean;
   includeChapterSeparator: boolean;
   noteSeparator: string;
@@ -307,6 +309,7 @@ export interface BookProgress {
   pageinfo: PageInfo;
   timeinfo: TimeInfo;
   range: Range;
+  page: number;
 }
 
 export interface BookSearchConfig {

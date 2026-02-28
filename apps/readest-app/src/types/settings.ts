@@ -66,6 +66,12 @@ export interface KOSyncSettings {
   strategy: KOSyncStrategy;
 }
 
+export interface ReadwiseSettings {
+  enabled: boolean;
+  accessToken: string;
+  lastSyncedAt: number;
+}
+
 export interface SystemSettings {
   version: number;
   localBooksDir: string;
@@ -105,6 +111,7 @@ export interface SystemSettings {
   kosync: KOSyncSettings;
   hardcover: HardcoverSettings;
   readeck: ReadeckSettings;
+  readwise: ReadwiseSettings;
 
   lastSyncedAtBooks: number;
   lastSyncedAtConfigs: number;

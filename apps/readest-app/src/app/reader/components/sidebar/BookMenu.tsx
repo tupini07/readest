@@ -22,6 +22,7 @@ import { setKOSyncSettingsWindowVisible } from '@/app/reader/components/KOSyncSe
 import { setHardcoverSettingsWindowVisible } from '@/app/reader/components/HardcoverSettings';
 import { setReadeckSettingsWindowVisible } from '@/app/reader/components/ReadeckSettings';
 import { setVocabularyScreenVisible } from '@/app/library/components/VocabularyScreen';
+import { setReadwiseSettingsWindowVisible } from '@/app/reader/components/ReadwiseSettings';
 import { setProofreadRulesVisibility } from '@/app/reader/components/ProofreadRules';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
 import useBooksManager from '../../hooks/useBooksManager';
@@ -119,6 +120,14 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
     eventDispatcher.dispatch('push-kosync', { bookKey: sideBarBookKey });
     setIsDropdownOpen?.(false);
   };
+  const showReadwiseSettingsWindow = () => {
+    setReadwiseSettingsWindowVisible(true);
+    setIsDropdownOpen?.(false);
+  };
+  const handlePushReadwise = () => {
+    eventDispatcher.dispatch('readwise-push-all', { bookKey: sideBarBookKey });
+    setIsDropdownOpen?.(false);
+  };
   const toggleDiscordPresence = () => {
     const discordRichPresenceEnabled = !settings.discordRichPresenceEnabled;
     saveSysSettings(envConfig, 'discordRichPresenceEnabled', discordRichPresenceEnabled);
@@ -180,12 +189,26 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
           <MenuItem label={_('Enter Parallel Read')} onClick={handleSetParallel} />
         ))}
       <hr aria-hidden='true' className='border-base-200 my-1' />
-      <MenuItem label={_('KOReader Sync')} onClick={showKoSyncSettingsWindow} />
-      {settings.kosync.enabled && (
-        <>
-          <MenuItem label={_('Push Progress')} onClick={handlePushKOSync} />
-          <MenuItem label={_('Pull Progress')} onClick={handlePullKOSync} />
-        </>
+      {settings.kosync.enabled ? (
+        <MenuItem label={_('KOReader Sync')} detailsOpen={false} buttonClass='py-2'>
+          <ul className='flex flex-col ps-1'>
+            <MenuItem label={_('Config')} noIcon onClick={showKoSyncSettingsWindow} />
+            <MenuItem label={_('Push Progress')} noIcon onClick={handlePushKOSync} />
+            <MenuItem label={_('Pull Progress')} noIcon onClick={handlePullKOSync} />
+          </ul>
+        </MenuItem>
+      ) : (
+        <MenuItem label={_('KOReader Sync')} onClick={showKoSyncSettingsWindow} />
+      )}
+      {settings.readwise.enabled ? (
+        <MenuItem label={_('Readwise Sync')} detailsOpen={false} buttonClass='py-2'>
+          <ul className='flex flex-col ps-1'>
+            <MenuItem label={_('Config')} noIcon onClick={showReadwiseSettingsWindow} />
+            <MenuItem label={_('Push Highlights')} noIcon onClick={handlePushReadwise} />
+          </ul>
+        </MenuItem>
+      ) : (
+        <MenuItem label={_('Readwise Sync')} onClick={showReadwiseSettingsWindow} />
       )}
       <MenuItem label={_('Hardcover Sync')} onClick={showHardcoverSettingsWindow} />
       {settings.hardcover.enabled && (
