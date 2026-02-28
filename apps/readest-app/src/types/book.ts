@@ -13,7 +13,7 @@ export type BookFormat =
   | 'FBZ'
   | 'TXT'
   | 'MD';
-export type BookNoteType = 'bookmark' | 'annotation' | 'excerpt';
+export type BookNoteType = 'bookmark' | 'annotation' | 'excerpt' | 'vocabulary';
 export type ReadingStatus = 'unread' | 'reading' | 'finished';
 export type HighlightStyle = 'highlight' | 'underline' | 'squiggly';
 // Predefined highlight colors, can be extended with custom hex colors

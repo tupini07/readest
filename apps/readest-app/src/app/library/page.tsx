@@ -56,6 +56,7 @@ import { AboutWindow } from '@/components/AboutWindow';
 import { BookDetailModal } from '@/components/metadata';
 import { UpdaterWindow } from '@/components/UpdaterWindow';
 import { ReadeckSettingsWindow } from '@/app/reader/components/ReadeckSettings';
+import { VocabularyScreen } from './components/VocabularyScreen';
 import { CatalogDialog } from './components/OPDSDialog';
 import { MigrateDataWindow } from './components/MigrateDataWindow';
 import { useDragDropImport } from './hooks/useDragDropImport';
@@ -928,6 +929,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       <AboutWindow />
       <UpdaterWindow />
       <ReadeckSettingsWindow />
+      <VocabularyScreen />
       <MigrateDataWindow />
       {isSettingsDialogOpen && <SettingsDialog bookKey={''} />}
       {showCatalogManager && <CatalogDialog onClose={handleDismissOPDSDialog} />}

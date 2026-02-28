@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { PiUserCircle, PiUserCircleCheck, PiGear } from 'react-icons/pi';
 import { PiSun, PiMoon } from 'react-icons/pi';
 import { TbSunMoon } from 'react-icons/tb';
-import { MdCloudSync, MdSync, MdSyncProblem } from 'react-icons/md';
+import { MdCloudSync, MdSync, MdSyncProblem, MdSchool } from 'react-icons/md';
 
 import { invoke, PermissionState } from '@tauri-apps/api/core';
 import { isTauriAppPlatform, isWebAppPlatform } from '@/services/environment';
@@ -24,6 +24,8 @@ import { optInTelemetry, optOutTelemetry } from '@/utils/telemetry';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
 import { setMigrateDataDirDialogVisible } from '@/app/library/components/MigrateDataWindow';
 import { setReadeckSettingsWindowVisible } from '@/app/reader/components/ReadeckSettings';
+import { setVocabularyScreenVisible } from '@/app/library/components/VocabularyScreen';
+import { useVocabularyStore } from '@/store/vocabularyStore';
 import { requestStoragePermission } from '@/utils/permission';
 import { saveSysSettings } from '@/helpers/settings';
 import { selectDirectory } from '@/utils/bridge';
@@ -51,6 +53,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   const { userProfilePlan, quotas } = useQuotaStats(true);
   const { themeMode, setThemeMode } = useThemeStore();
   const { settings, setSettingsDialogOpen } = useSettingsStore();
+  const vocabEntries = useVocabularyStore((s) => s.entries);
   const [isAutoUpload, setIsAutoUpload] = useState(settings.autoUpload);
   const [isAutoCheckUpdates, setIsAutoCheckUpdates] = useState(settings.autoCheckUpdates);
   const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(settings.alwaysOnTop);
@@ -314,6 +317,16 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
         label={settings.readeck?.enabled ? _('Readeck (Connected)') : _('Readeck')}
         onClick={() => {
           setReadeckSettingsWindowVisible(true);
+          setIsDropdownOpen?.(false);
+        }}
+      />
+
+      <MenuItem
+        label={_('Vocabulary')}
+        Icon={MdSchool}
+        description={vocabEntries.length > 0 ? `${vocabEntries.length}` : ''}
+        onClick={() => {
+          setVocabularyScreenVisible(true);
           setIsDropdownOpen?.(false);
         }}
       />

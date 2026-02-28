@@ -26,6 +26,7 @@ import { UpdaterWindow } from '@/components/UpdaterWindow';
 import { KOSyncSettingsWindow } from './KOSyncSettings';
 import { HardcoverSettingsWindow } from './HardcoverSettings';
 import { ReadeckSettingsWindow } from './ReadeckSettings';
+import { VocabularyScreen } from '@/app/library/components/VocabularyScreen';
 import { ProofreadRulesManager } from './ProofreadRules';
 import { Toast } from '@/components/Toast';
 import { getLocale } from '@/utils/misc';
@@ -173,6 +174,7 @@ const Reader: React.FC<{ ids?: string }> = ({ ids }) => {
         <KOSyncSettingsWindow />
         <HardcoverSettingsWindow />
         <ReadeckSettingsWindow />
+        <VocabularyScreen />
         <ProofreadRulesManager />
         <Toast />
       </Suspense>

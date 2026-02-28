@@ -889,6 +889,10 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
           trianglePosition={trianglePosition}
           popupWidth={dictPopupWidth}
           popupHeight={dictPopupHeight}
+          bookHash={bookData.book?.hash}
+          bookTitle={bookData.book?.title}
+          cfi={selection?.cfi}
+          context={selection?.range?.startContainer?.textContent?.slice(0, 200) || ''}
           onDismiss={handleDismissPopupAndSelection}
         />
       )}

@@ -1,8 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MdArrowBack } from 'react-icons/md';
+import { MdArrowBack, MdStar, MdStarBorder } from 'react-icons/md';
 import { Position } from '@/utils/sel';
 import { useTranslation } from '@/hooks/useTranslation';
+import { dictionaryCache } from '@/services/dictionary/DictionaryCache';
+import { useVocabularyStore } from '@/store/vocabularyStore';
 import Popup from '@/components/Popup';
+
+const WIKTIONARY_LANG_EDITIONS = new Set([
+  'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'zh', 'ko', 'ru',
+]);
+
+function getWiktionaryEdition(lang?: string): string {
+  if (!lang) return 'en';
+  const code = lang.split('-')[0]!.toLowerCase();
+  return WIKTIONARY_LANG_EDITIONS.has(code) ? code : 'en';
+}
 
 type Definition = {
   definition: string;
@@ -22,6 +34,10 @@ interface WiktionaryPopupProps {
   trianglePosition: Position;
   popupWidth: number;
   popupHeight: number;
+  bookHash?: string;
+  bookTitle?: string;
+  cfi?: string;
+  context?: string;
   onDismiss?: () => void;
 }
 
@@ -32,6 +48,10 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
   trianglePosition,
   popupWidth,
   popupHeight,
+  bookHash,
+  bookTitle,
+  cfi,
+  context,
   onDismiss,
 }) => {
   const _ = useTranslation();
@@ -47,9 +67,20 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
   const scrollDeltaRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const [isBackVisible, setIsBackVisible] = useState(false);
+  const [isCached, setIsCached] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const lookupWord = history.items[history.index] ?? word;
   const canGoBack = history.index > 0;
   const showBackButton = canGoBack && isBackVisible;
+  const { entries, addEntry, removeEntry } = useVocabularyStore();
+
+  useEffect(() => {
+    const langCode = typeof lang === 'string' ? lang?.split('-')[0]?.toLowerCase() : lang?.[0];
+    const savedEntry = entries.find(
+      (e) => e.word.toLowerCase() === word.toLowerCase() && e.language === (langCode || 'en'),
+    );
+    setIsSaved(!!savedEntry);
+  }, [word, lang, entries]);
 
   useEffect(() => {
     setHistory({ items: [word], index: 0 });
@@ -181,16 +212,31 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
     const fetchDefinitions = async (word: string, language?: string) => {
       main.innerHTML = '';
       footer.dataset['state'] = 'loading';
+      setIsCached(false);
+
+      // Always use en.wiktionary.org for the API — other editions return 501.
+      // The response already includes per-language sections we can filter on.
+      const apiEdition = 'en';
 
       try {
-        const response = await fetch(
-          `https://en.wiktionary.org/api/rest_v1/page/definition/${word}`,
-        );
-        if (!response.ok) {
-          throw new Error('Failed to fetch definitions');
+        let json: Record<string, Result[]>;
+        const cached = await dictionaryCache.get(word, apiEdition);
+
+        if (cached) {
+          json = cached as Record<string, Result[]>;
+          setIsCached(true);
+        } else {
+          const response = await fetch(
+            `https://${apiEdition}.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`,
+          );
+          if (!response.ok) {
+            throw new Error('Failed to fetch definitions');
+          }
+          json = await response.json();
+          await dictionaryCache.set(word, apiEdition, json);
+          setIsCached(false);
         }
 
-        const json = await response.json();
         const results: Result[] | undefined = language
           ? json[language] || json['en']
           : json[Object.keys(json)[0]!];
@@ -259,7 +305,7 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
 
         const p = document.createElement('p');
         p.innerHTML = _('Unable to load the word. Try searching directly on {{link}}.', {
-          link: `<a href="https://en.wiktionary.org/w/index.php?search=${encodeURIComponent(
+          link: `<a href="https://${getWiktionaryEdition(langCode)}.wiktionary.org/w/index.php?search=${encodeURIComponent(
             word,
           )}" target="_blank" rel="noopener noreferrer" class="not-eink:text-primary underline">Wiktionary</a>`,
         });
@@ -273,6 +319,37 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [_, lookupWord, lang]);
 
+  const handleToggleSave = () => {
+    const langCode = typeof lang === 'string' ? lang?.split('-')[0]?.toLowerCase() : lang?.[0];
+    const resolvedLang = langCode || 'en';
+    const existing = entries.find(
+      (e) => e.word.toLowerCase() === lookupWord.toLowerCase() && e.language === resolvedLang,
+    );
+
+    if (existing) {
+      removeEntry(existing.id);
+      setIsSaved(false);
+    } else {
+      const definitionText = mainRef.current?.innerHTML || '';
+      addEntry({
+        id: crypto.randomUUID(),
+        word: lookupWord,
+        language: resolvedLang,
+        definition: definitionText,
+        context: context,
+        bookHash,
+        bookTitle,
+        cfi,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        nextReviewAt: Date.now(),
+        reviewCount: 0,
+        ease: 2.5,
+      });
+      setIsSaved(true);
+    }
+  };
+
   return (
     <div>
       <Popup
@@ -284,6 +361,18 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
         onDismiss={onDismiss}
       >
         <div className='relative flex h-full flex-col'>
+          <button
+            type='button'
+            onClick={handleToggleSave}
+            aria-label={isSaved ? _('Remove from Vocabulary') : _('Save to Vocabulary')}
+            className='btn btn-ghost btn-circle text-base-content absolute right-2 top-2 z-10 h-8 min-h-8 w-8 p-0'
+          >
+            {isSaved ? (
+              <MdStar size={20} className='text-warning' />
+            ) : (
+              <MdStarBorder size={20} />
+            )}
+          </button>
           {canGoBack && (
             <button
               type='button'
@@ -310,8 +399,9 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
             ref={footerRef}
             className='mt-auto hidden data-[state=loaded]:block data-[state=error]:hidden data-[state=loading]:hidden'
           >
-            <div className='not-eink:opacity-60 flex items-center px-4 py-2 text-sm'>
-              Source: Wiktionary (CC BY-SA)
+            <div className='not-eink:opacity-60 flex items-center justify-between px-4 py-2 text-sm'>
+              <span>Source: Wiktionary (CC BY-SA)</span>
+              <span className='text-xs'>{isCached ? _('Cached') : _('Online')}</span>
             </div>
           </footer>
         </div>

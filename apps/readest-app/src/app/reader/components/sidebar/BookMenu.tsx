@@ -21,6 +21,7 @@ import { saveSysSettings } from '@/helpers/settings';
 import { setKOSyncSettingsWindowVisible } from '@/app/reader/components/KOSyncSettings';
 import { setHardcoverSettingsWindowVisible } from '@/app/reader/components/HardcoverSettings';
 import { setReadeckSettingsWindowVisible } from '@/app/reader/components/ReadeckSettings';
+import { setVocabularyScreenVisible } from '@/app/library/components/VocabularyScreen';
 import { setProofreadRulesVisibility } from '@/app/reader/components/ProofreadRules';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
 import useBooksManager from '../../hooks/useBooksManager';
@@ -95,6 +96,10 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
   };
   const showReadeckSettingsWindow = () => {
     setReadeckSettingsWindowVisible(true);
+    setIsDropdownOpen?.(false);
+  };
+  const showVocabularyScreen = () => {
+    setVocabularyScreenVisible(true);
     setIsDropdownOpen?.(false);
   };
   const handleSyncToHardcover = () => {
@@ -187,6 +192,7 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
         <MenuItem label={_('Sync to Hardcover')} onClick={handleSyncToHardcover} />
       )}
       <MenuItem label={_('Readeck')} onClick={showReadeckSettingsWindow} />
+      <MenuItem label={_('Vocabulary')} onClick={showVocabularyScreen} />
       {appService?.isDesktopApp && (
         <>
           <hr aria-hidden='true' className='border-base-200 my-1' />
