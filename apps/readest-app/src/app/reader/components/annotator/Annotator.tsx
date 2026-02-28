@@ -18,6 +18,7 @@ import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useDeviceControlStore } from '@/store/deviceStore';
 import { useFoliateEvents } from '../../hooks/useFoliateEvents';
 import { useNotesSync } from '../../hooks/useNotesSync';
+import { useReadwiseSync } from '../../hooks/useReadwiseSync';
 import { useTextSelector } from '../../hooks/useTextSelector';
 import { Position, TextSelection } from '@/utils/sel';
 import { getPopupPosition, getPosition, getTextFromRange } from '@/utils/sel';
@@ -51,6 +52,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const { listenToNativeTouchEvents } = useDeviceControlStore();
 
   useNotesSync(bookKey);
+  useReadwiseSync(bookKey);
 
   const osPlatform = getOSPlatform();
   const config = getConfig(bookKey)!;
@@ -419,6 +421,31 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const updateBooknotesPage = async () => {
+      const config = getConfig(bookKey);
+      const view = getView(bookKey);
+      if (!config || !view) return;
+      const { booknotes: annotations = [] } = config;
+      annotations.sort((a, b) => {
+        return CFI.compare(a.cfi, b.cfi);
+      });
+      for (const annotation of annotations) {
+        if (annotation.deletedAt || annotation.page || !annotation.cfi) continue;
+        const progress = await view.getCFIProgress(annotation.cfi);
+        if (progress) {
+          annotation.page = progress.location.current + 1;
+        }
+      }
+      const updatedConfig = updateBooknotes(bookKey, annotations);
+      if (updatedConfig) {
+        saveConfig(envConfig, bookKey, updatedConfig, settings);
+      }
+    };
+    setTimeout(updateBooknotesPage, 3000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleQuickAction = () => {
     const action = viewSettings.annotationQuickAction;
     if (appService?.isAndroidApp && !androidTouchEndRef.current) return;
@@ -583,6 +610,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       cfi,
       text: selection.text,
       note: '',
+      page: progress.page,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -623,6 +651,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       color,
       text: selection.text,
       note: '',
+      page: progress.page,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };

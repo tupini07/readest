@@ -20,6 +20,7 @@ import {
   LibraryGroupByType,
   LibrarySortByType,
   ReadSettings,
+  ReadwiseSettings,
   SystemSettings,
 } from '@/types/settings';
 import { UserStorageQuota, UserDailyTranslationQuota } from '@/types/quota';
@@ -64,6 +65,14 @@ export const DEFAULT_KOSYNC_SETTINGS = {
   enabled: false,
 } as KOSyncSettings;
 
+export const READWISE_API_BASE_URL = 'https://readwise.io/api/v2';
+
+export const DEFAULT_READWISE_SETTINGS = {
+  enabled: false,
+  accessToken: '',
+  lastSyncedAt: 0,
+} as ReadwiseSettings;
+
 export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   keepLogin: false,
   autoUpload: true,
@@ -93,6 +102,7 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   metadataDescriptionCollapsed: false,
 
   kosync: DEFAULT_KOSYNC_SETTINGS,
+  readwise: DEFAULT_READWISE_SETTINGS,
   aiSettings: DEFAULT_AI_SETTINGS,
 
   lastSyncedAtBooks: 0,
@@ -297,6 +307,7 @@ export const DEFAULT_NOTE_EXPORT_CONFIG: NoteExportConfig = {
   includeChapterTitles: true,
   includeQuotes: true,
   includeNotes: true,
+  includePageNumber: true,
   includeTimestamp: false,
   includeChapterSeparator: false,
   noteSeparator: '\n\n',
@@ -816,6 +827,7 @@ export const TRANSLATOR_LANGS: Record<string, string> = {
   da: 'Dansk',
   cs: 'Čeština',
   hu: 'Magyar',
+  km: 'ខ្មែរ',
   ro: 'Română',
   bg: 'Български',
   hr: 'Hrvatski',

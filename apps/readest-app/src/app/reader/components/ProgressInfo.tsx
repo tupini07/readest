@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
+import { Trans } from 'react-i18next';
 import { Insets } from '@/types/misc';
 import { useEnv } from '@/context/EnvContext';
 import { useReaderStore } from '@/store/readerStore';
@@ -74,6 +75,8 @@ const ProgressInfoView: React.FC<PageInfoProps> = ({
             count: pagesLeft,
           })
       : '';
+
+  const showPagesLeft = total - 1 > current;
 
   const [progressInfoMode, setProgressInfoMode] = useState(viewSettings.progressInfoMode);
 
@@ -171,9 +174,24 @@ const ProgressInfoView: React.FC<PageInfoProps> = ({
         {(progressInfoMode === 'all' || progressInfoMode === 'remaining') && (
           <>
             {viewSettings.showRemainingTime ? (
-              <span className='text-start'>{timeLeftStr}</span>
-            ) : viewSettings.showRemainingPages ? (
-              <span className='text-start'>{pagesLeftStr}</span>
+              <span className='time-left-label text-start'>{timeLeftStr}</span>
+            ) : viewSettings.showRemainingPages && showPagesLeft ? (
+              <span className='text-start'>
+                {localize ? (
+                  <Trans
+                    i18nKey='{{number}} pages left in chapter'
+                    values={{ number: formatNumber(pagesLeft, localize, lang) }}
+                  >
+                    <span className='pages-left-number'>{'{{number}}'}</span>
+                    <span className='pages-left-label'>{' pages left in chapter'}</span>
+                  </Trans>
+                ) : (
+                  <Trans i18nKey='{{count}} pages left in chapter' count={pagesLeft}>
+                    <span className='pages-left-number'>{'{{count}}'}</span>
+                    <span className='pages-left-label'>{' pages left in chapter'}</span>
+                  </Trans>
+                )}
+              </span>
             ) : null}
           </>
         )}
@@ -181,7 +199,9 @@ const ProgressInfoView: React.FC<PageInfoProps> = ({
         {(progressInfoMode === 'all' || progressInfoMode === 'progress') && (
           <>
             {viewSettings.showProgressInfo && (
-              <span className={clsx('text-end', isVertical ? 'mt-auto' : 'ms-auto')}>
+              <span
+                className={clsx('progress-info-label text-end', isVertical ? 'mt-auto' : 'ms-auto')}
+              >
                 {progressInfo}
               </span>
             )}
