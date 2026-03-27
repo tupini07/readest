@@ -36,6 +36,7 @@ import {
   needsProxy,
   probeFilename,
 } from './utils/opdsReq';
+import { ImportError } from '@/services/errors';
 import { READEST_OPDS_USER_AGENT } from '@/services/constants';
 import { FeedView } from './components/FeedView';
 import { PublicationView } from './components/PublicationView';
@@ -463,15 +464,20 @@ export default function BrowserPage() {
           }
 
           const { library, setLibrary } = useLibraryStore.getState();
-          const book = await appService.importBook(dstFilePath, library);
-          if (user && book && !book.uploadedAt && settings.autoUpload) {
-            setTimeout(() => {
-              transferManager.queueUpload(book);
-            }, 3000);
+          try {
+            const book = await appService.importBook(dstFilePath, library);
+            if (user && book && !book.uploadedAt && settings.autoUpload) {
+              setTimeout(() => {
+                transferManager.queueUpload(book);
+              }, 3000);
+            }
+            setLibrary(library);
+            appService.saveLibraryBooks(library);
+            return book;
+          } catch (importError) {
+            console.error('Import error:', importError);
+            throw new ImportError(importError);
           }
-          setLibrary(library);
-          appService.saveLibraryBooks(library);
-          return book;
         }
       } catch (e) {
         console.error('Download error:', e);
@@ -489,7 +495,7 @@ export default function BrowserPage() {
       const username = usernameRef.current || '';
       const password = passwordRef.current || '';
       if (!username && !password) {
-        return url;
+        return needsProxy(url) ? getProxiedURL(url, '', true) : url;
       }
 
       const cachedKey = `img_${md5(url)}.png`;

@@ -184,7 +184,6 @@ export const DEFAULT_BOOK_LAYOUT: BookLayout = {
   swapClickArea: false,
   disableDoubleClick: false,
   volumeKeysToFlip: false,
-  continuousScroll: false,
   maxColumnCount: 2,
   maxInlineSize: getDefaultMaxInlineSize(),
   maxBlockSize: getDefaultMaxBlockSize(),
@@ -193,6 +192,7 @@ export const DEFAULT_BOOK_LAYOUT: BookLayout = {
   rtl: false,
   scrollingOverlap: 0,
   allowScript: false,
+  hideScrollbar: false,
 };
 
 export const DEFAULT_BOOK_LANGUAGE: BookLanguage = {
@@ -267,6 +267,10 @@ export const DEFAULT_VIEW_CONFIG: ViewConfig = {
   showRemainingTime: false,
   showRemainingPages: false,
   showProgressInfo: true,
+  showCurrentTime: false,
+  showCurrentBatteryStatus: false,
+  showBatteryPercentage: true,
+  use24HourClock: false,
   tapToToggleFooter: false,
   showMarginsOnScroll: false,
   showPaginationButtons: false,
@@ -805,6 +809,7 @@ export const TRANSLATED_LANGS = {
   el: 'Ελληνικά',
   uk: 'Українська',
   pl: 'Polski',
+  sl: 'Slovenščina',
   tr: 'Türkçe',
   hi: 'हिन्दी',
   id: 'Indonesia',

@@ -190,8 +190,10 @@ const getColorStyles = (
     }
     table {
       overflow: auto;
-      table-layout: fixed;
       display: table !important;
+    }
+    table:has(> colgroup) {
+      table-layout: fixed;
     }
     /* code */
     body.theme-dark code {
@@ -226,6 +228,10 @@ const getColorStyles = (
     .chapterHeader, .chapterHeader * {
       border-color: unset;
       background-color: ${bg} !important;
+    }
+    .calibre {
+      color: unset;
+      background-color: unset;
     }
   `;
   return colorStyles;
@@ -278,6 +284,8 @@ const getLayoutStyles = (
   body {
     overflow: unset;
     zoom: ${zoomLevel};
+    padding: unset;
+    margin: unset;
   }
   svg:where(:not([width])), img:where(:not([width])) {
     width: auto;
@@ -309,6 +317,11 @@ const getLayoutStyles = (
     -webkit-hyphenate-limit-lines: 2;
     hanging-punctuation: allow-end last;
     widows: 2;
+  }
+  li {
+    line-height: ${lineSpacing} ${overrideLayout ? '!important' : ''};
+    -webkit-hyphens: ${hyphenate ? 'auto' : 'manual'};
+    hyphens: ${hyphenate ? 'auto' : 'manual'};
   }
   p.aligned-center, blockquote.aligned-center,
   dd.aligned-center, div.aligned-center {
@@ -390,10 +403,6 @@ const getLayoutStyles = (
     display: none;
   }
 
-  .calibre {
-    color: unset;
-  }
-
   div:has(> img, > svg) {
     max-width: 100% !important;
   }
@@ -471,11 +480,10 @@ export const getFootnoteStyles = () => `
 
   body {
     padding: 1em !important;
+    overflow-wrap: break-word;
   }
 
   a:any-link {
-    cursor: default;
-    pointer-events: none;
     text-decoration: none;
     padding: unset;
     margin: unset;
@@ -807,6 +815,27 @@ export const applyScrollModeClass = (document: Document, isScrollMode: boolean) 
   document.body.classList.add(isScrollMode ? 'scroll-mode' : 'paginated-mode');
 };
 
+/**
+  @param document should be the global `document`
+*/
+export const applyScrollbarStyle = (document: Document, hideScrollbar: boolean) => {
+  const styleId = 'scrollbar-hide-style';
+  let styleEl = document.getElementById(styleId) as HTMLStyleElement;
+
+  if (hideScrollbar) {
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = 'foliate-view::part(container) { scrollbar-width: none; }';
+  } else {
+    if (styleEl) {
+      styleEl.textContent = 'foliate-view::part(container) { scrollbar-width: thin; }';
+    }
+  }
+};
+
 export const applyImageStyle = (document: Document) => {
   document.querySelectorAll('img').forEach((img) => {
     const widthAttr = img.getAttribute('width');
@@ -883,16 +912,6 @@ export const applyTableStyle = (document: Document) => {
       }
     }
 
-    const computedTableStyle = window.getComputedStyle(table);
-    const computedWidth = computedTableStyle.width;
-    if (computedWidth && computedWidth !== 'auto' && computedWidth !== '0px') {
-      const widthValue = parseFloat(computedWidth);
-      const widthUnit = computedWidth.replace(widthValue.toString(), '').trim();
-      if (widthUnit !== '%') {
-        // Workaround for hardcoded table layout, closes #3205
-        table.style.width = `calc(min(${computedWidth}, var(--available-width)))`;
-      }
-    }
     const parentWidth = window.getComputedStyle(parent as Element).width;
     const parentContainerWidth = parseFloat(parentWidth) || 0;
     if (totalTableWidth > 0) {

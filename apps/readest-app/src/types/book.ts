@@ -84,7 +84,9 @@ export interface BookNote {
   metaHash?: string;
   id: string;
   type: BookNoteType;
-  cfi: string;
+  cfi: string; // Canonicalized CFI for the note location
+  xpointer0?: string; // Start XPointer for the note location
+  xpointer1?: string; // End XPointer for the note location
   page?: number;
   text?: string;
   style?: HighlightStyle;
@@ -123,7 +125,6 @@ export interface BookLayout {
   swapClickArea: boolean;
   disableDoubleClick: boolean;
   volumeKeysToFlip: boolean;
-  continuousScroll: boolean;
   maxColumnCount: number;
   maxInlineSize: number;
   maxBlockSize: number;
@@ -132,6 +133,7 @@ export interface BookLayout {
   rtl: boolean;
   scrollingOverlap: number;
   allowScript: boolean;
+  hideScrollbar: boolean;
 }
 
 export interface BookStyle {
@@ -189,6 +191,7 @@ export interface BookLanguage {
   convertChineseVariant: ConvertChineseVariant;
 }
 
+export type ProgressBarMode = 'remaining' | 'progress' | 'battery' | 'time' | 'all' | 'none';
 export interface ViewConfig {
   sideBarTab: string;
   uiLanguage: string;
@@ -202,12 +205,16 @@ export interface ViewConfig {
   showRemainingTime: boolean;
   showRemainingPages: boolean;
   showProgressInfo: boolean;
+  showCurrentTime: boolean;
+  use24HourClock: boolean;
+  showCurrentBatteryStatus: boolean;
+  showBatteryPercentage: boolean;
   tapToToggleFooter: boolean;
   showBarsOnScroll: boolean;
   showMarginsOnScroll: boolean;
   showPaginationButtons: boolean;
   progressStyle: 'percentage' | 'fraction';
-  progressInfoMode: 'remaining' | 'progress' | 'all' | 'none';
+  progressInfoMode: ProgressBarMode;
 
   animated: boolean;
   isEink: boolean;
@@ -301,12 +308,12 @@ export interface ViewSettings
 
 export interface BookProgress {
   location: string;
-  sectionId: number;
   sectionHref: string;
   sectionLabel: string;
   section: PageInfo;
   pageinfo: PageInfo;
   timeinfo: TimeInfo;
+  index: number;
   range: Range;
   page: number;
 }
@@ -354,6 +361,7 @@ export interface BookConfig {
 
   lastSyncedAtConfig?: number;
   lastSyncedAtNotes?: number;
+  foliateImportedAt?: number;
 
   updatedAt: number;
 }

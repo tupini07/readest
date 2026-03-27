@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import React from 'react';
-import Image from 'next/image';
 
 import { MdCheck } from 'react-icons/md';
 import { useRouter } from 'next/navigation';
@@ -125,15 +124,8 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
       <MenuItem
         label={_('Parallel Read')}
         buttonClass={bookKeys.length > 1 ? 'lg:tooltip lg:tooltip-bottom' : ''}
-        tooltip={parallelViews.length > 0 ? _('Disable') : bookKeys.length > 1 ? _('Enable') : ''}
+        tooltip={parallelViews.length > 0 ? _('Disable') : _('Enable')}
         Icon={parallelViews.length > 0 && bookKeys.length > 1 ? MdCheck : undefined}
-        onClick={
-          parallelViews.length > 0
-            ? handleUnsetParallel
-            : bookKeys.length > 1
-              ? handleSetParallel
-              : undefined
-        }
       >
         <ul className='max-h-60 overflow-y-auto'>
           {getVisibleLibrary()
@@ -144,7 +136,7 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
               <MenuItem
                 key={book.hash}
                 Icon={
-                  <Image
+                  <img
                     src={book.coverImageUrl!}
                     alt={book.title}
                     width={56}
