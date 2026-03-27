@@ -77,10 +77,10 @@ const WiktionaryPopup: React.FC<WiktionaryPopupProps> = ({
   useEffect(() => {
     const langCode = typeof lang === 'string' ? lang?.split('-')[0]?.toLowerCase() : lang?.[0];
     const savedEntry = entries.find(
-      (e) => e.word.toLowerCase() === word.toLowerCase() && e.language === (langCode || 'en'),
+      (e) => e.word.toLowerCase() === lookupWord.toLowerCase() && e.language === (langCode || 'en'),
     );
     setIsSaved(!!savedEntry);
-  }, [word, lang, entries]);
+  }, [lookupWord, lang, entries]);
 
   useEffect(() => {
     setHistory({ items: [word], index: 0 });
