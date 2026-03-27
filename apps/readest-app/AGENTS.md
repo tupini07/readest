@@ -6,17 +6,20 @@ Readest is a cross-platform ebook reader built as a **Next.js 16 + Tauri v2** hy
 
 ```bash
 # Development
-pnpm dev-web              # Web-only dev server (no Rust compilation needed)
+pnpm dev-web               # Web-only dev server (no Rust compilation needed)
 pnpm tauri dev             # Desktop dev with Tauri (compiles Rust backend)
 
 # Building
 pnpm build                 # Build Next.js for Tauri
 pnpm build-web             # Build Next.js for web deployment
 
-# Testing
-pnpm test                  # Run all tests (vitest + jsdom)
+# Testing (see [docs/testing.md](docs/testing.md) for full details)
+pnpm test                  # Unit tests (vitest + jsdom)
 pnpm test -- src/__tests__/utils/misc.test.ts  # Run a single test file
 pnpm test -- --watch       # Watch mode
+pnpm test:browser          # Browser tests (Chromium via Playwright)
+pnpm tauri:dev:test        # Start Tauri app with webdriver
+pnpm test:tauri            # Run Tauri integration tests
 
 # Linting & Formatting
 pnpm lint                  # ESLint
@@ -24,7 +27,8 @@ pnpm format                # Prettier (runs from monorepo root)
 pnpm format:check          # Check formatting without writing
 
 # Rust
-pnpm clippy                # Lint Rust code (src-tauri)
+pnpm fmt:check             # Check formatting Rust code (src-tauri)
+pnpm clippy:check          # Lint Rust code (src-tauri)
 ```
 
 ### Source Layout
@@ -54,19 +58,34 @@ Platform-specific code lives in `src-tauri/src/{macos,windows,android,ios}/`. Cu
 
 ## Project Rules
 
-### TypeScript
+Rules are in `.claude/rules/`: test-first, typescript, verification.
 
-- Never use the `any` type. Use `unknown`, proper types, or generics instead.
-- Strict mode is enabled. Target is ES2022.
-- Unused vars prefixed with `_` are allowed (ESLint configured).
+### i18n
 
-### Build Constraints
+See [docs/i18n.md](docs/i18n.md) for the key-as-content translation approach, `stubTranslation` usage in non-React modules, and extraction workflow.
 
-- No optional chaining (`?.`) in build output — verified by `check:optional-chaining`.
-- No lookbehind regex in build output — verified by `check:lookbehind-regex`.
-- Run `pnpm build-check` (builds both targets + runs all checks) before submitting.
+### Safe Area Insets
 
-### Formatting
+See [docs/safe-area-insets.md](docs/safe-area-insets.md) for rules on handling top/bottom insets for UI elements near screen edges.
 
-- Prettier is enforced via husky pre-commit hook + lint-staged.
-- Run `pnpm format` to auto-fix.
+## Web Browsing & QA (gstack)
+
+For all web browsing, QA testing, and site interaction, use the `/browse` skill from gstack. **Never use `mcp__claude-in-chrome__*` tools directly.**
+
+Available gstack skills:
+
+- `/plan-ceo-review` — CEO/founder-mode plan review
+- `/plan-eng-review` — Eng manager-mode plan review
+- `/plan-design-review` — Designer's eye review of a live site
+- `/design-consultation` — Design system consultation
+- `/review` — Pre-landing PR review
+- `/ship` — Ship workflow (merge, test, review, bump, PR)
+- `/browse` — Fast headless browser for QA and site interaction
+- `/qa` — QA test and fix bugs
+- `/qa-only` — QA report only (no fixes)
+- `/qa-design-review` — Designer's eye QA with fixes
+- `/setup-browser-cookies` — Import cookies for authenticated testing
+- `/retro` — Weekly engineering retrospective
+- `/document-release` — Post-ship documentation update
+
+If gstack skills aren't working, run `cd .claude/skills/gstack && ./setup` to build the binary and register skills.

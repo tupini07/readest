@@ -45,6 +45,7 @@ export interface FoliateView extends HTMLElement {
   ) => Promise<void>;
   book: BookDoc;
   tts: TTS | null;
+  isFixedLayout: boolean;
   language: {
     locale?: LocaleWithTextInfo;
     isCJK?: boolean;
@@ -65,12 +66,16 @@ export interface FoliateView extends HTMLElement {
     viewSize: number; // whole document view height
     start: number;
     end: number;
-    page: number;
-    pages: number;
+    page: number; // section page index (0-based)
+    pages: number; // section page count
     atStart: boolean;
     atEnd: boolean;
     containerPosition: number;
     sideProp: 'width' | 'height';
+    pageColors?: {
+      background: string;
+      foreground: string;
+    };
     setAttribute: (name: string, value: string | number) => void;
     removeAttribute: (name: string) => void;
     next: () => Promise<void>;
@@ -79,8 +84,9 @@ export interface FoliateView extends HTMLElement {
     prevSection?: () => Promise<void>;
     goTo?: (params: { index: number; anchor?: number | RangeAnchor }) => void;
     setStyles?: (css: string) => void;
+    primaryIndex: number;
     getContents: () => { doc: Document; index?: number; overlayer?: unknown }[];
-    scrollToAnchor: (anchor: number | Range) => void;
+    scrollToAnchor?: (anchor: number | Range, reason?: string, smooth?: boolean) => void;
     addEventListener: (
       type: string,
       listener: EventListener,
@@ -90,9 +96,19 @@ export interface FoliateView extends HTMLElement {
     showLoupe?: (
       x: number,
       y: number,
-      options: { isVertical: boolean; color: string; radius: number },
+      options: {
+        isVertical: boolean;
+        color: string;
+        gap: number;
+        margin: number;
+        radius: number;
+        magnification: number;
+      },
     ) => void;
     hideLoupe?: () => void;
+    destroyLoupe?: () => void;
+    pinchZoom?: (ratio: number) => void;
+    pinchEnd?: () => void;
   };
 }
 

@@ -48,6 +48,9 @@ tauri.*.conf.json
 *.tsbuildinfo
 next-env.d.ts
 
+# eslint
+.eslintcache
+
 #generated
 src-tauri/gen
 
@@ -59,4 +62,9 @@ src-tauri/gen
 /public/workbox-*.js
 /public/fallback-*.js
 /public/swe-worker-*.js
+
+/dist/
+
+.claude/settings.local.json
+.claude/skills
 

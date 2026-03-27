@@ -20,14 +20,14 @@ import { useFoliateEvents } from '../../hooks/useFoliateEvents';
 import { useNotesSync } from '../../hooks/useNotesSync';
 import { useReadwiseSync } from '../../hooks/useReadwiseSync';
 import { useTextSelector } from '../../hooks/useTextSelector';
-import { Position, TextSelection } from '@/utils/sel';
+import { Point, Position, TextSelection } from '@/utils/sel';
 import { getPopupPosition, getPosition, getTextFromRange } from '@/utils/sel';
 import { eventDispatcher } from '@/utils/event';
 import { findTocItemBS } from '@/utils/toc';
 import { throttle } from '@/utils/throttle';
 import { runSimpleCC } from '@/utils/simplecc';
 import { getWordCount } from '@/utils/word';
-import { isCfiInLocation } from '@/utils/cfi';
+import { getIndexFromCfi, isCfiInLocation } from '@/utils/cfi';
 import { TransformContext } from '@/services/transformers/types';
 import { transformContent } from '@/services/transformService';
 import { getHighlightColorHex } from '../../utils/annotatorUtil';
@@ -79,6 +79,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
   const [showAnnotationNotes, setShowAnnotationNotes] = useState(false);
   const [annotationNotes, setAnnotationNotes] = useState<BookNote[]>([]);
   const [editingAnnotation, setEditingAnnotation] = useState<BookNote | null>(null);
+  const [externalDragPoint, setExternalDragPoint] = useState<Point | null>(null);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportData, setExportData] = useState<{
     booknotes: BookNote[];
@@ -175,6 +176,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       viewSettings: getViewSettings(bookKey)!,
       userLocale: getLocale(),
       content: '',
+      isFixedLayout: bookData.isFixedLayout,
       transformers: ['punctuation'],
       reversePunctuationTransform: true,
     }),
@@ -206,6 +208,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
 
   const {
     isTextSelected,
+    isInstantAnnotating,
     handleScroll,
     handleTouchStart,
     handleTouchMove,
@@ -218,7 +221,14 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     handleShowPopup,
     handleUpToPopup,
     handleContextmenu,
-  } = useTextSelector(bookKey, setSelection, getAnnotationText, handleDismissPopup);
+  } = useTextSelector(
+    bookKey,
+    setSelection,
+    setEditingAnnotation,
+    setExternalDragPoint,
+    getAnnotationText,
+    handleDismissPopup,
+  );
 
   const handleDismissPopupAndSelection = () => {
     handleDismissPopup();
@@ -234,7 +244,9 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       // Available on iOS, on Android not fired
       // To make the popup not follow the selection while dragging
       setShowAnnotPopup(false);
-      setEditingAnnotation(null);
+      if (!isInstantAnnotating.current) {
+        setEditingAnnotation(null);
+      }
       handleTouchMove(ev);
     };
 
@@ -273,7 +285,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     detail.doc?.addEventListener('selectionchange', handleSelectionchange.bind(null, doc, index));
 
     // For PDF selections, enable right-click context menu to directly open translator popup.
-    if (bookData.book?.format === 'PDF') {
+    if (bookData.isFixedLayout) {
       detail.doc?.addEventListener('contextmenu', (e: Event) => {
         try {
           const sel = doc.getSelection?.();
@@ -281,7 +293,14 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
             const range = sel.getRangeAt(0);
             const text = sel.toString();
             if (text.trim()) {
-              setSelection({ key: bookKey, text, range, index, cfi: view?.getCFI(index, range) });
+              setSelection({
+                key: bookKey,
+                text,
+                range,
+                index,
+                cfi: view?.getCFI(index, range),
+                page: index + 1,
+              });
               // Show translation popup preferentially for PDF right-click
               setShowAnnotPopup(false);
               setShowDeepLPopup(true);
@@ -301,6 +320,25 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
 
     // Disable the default context menu on mobile devices (selection handles suffice)
     detail.doc?.addEventListener('contextmenu', handleContextmenu);
+  };
+
+  const onCreateOverlay = (event: Event) => {
+    const detail = (event as CustomEvent).detail;
+    const { booknotes = [] } = getConfig(bookKey)!;
+    booknotes
+      .filter(
+        (booknote) =>
+          booknote.type === 'annotation' &&
+          !booknote.deletedAt &&
+          getIndexFromCfi(booknote.cfi) === detail.index,
+      )
+      .map((annotation) => {
+        try {
+          view?.addAnnotation(annotation);
+        } catch (err) {
+          console.warn('Failed to add annotation', { annotation, error: err });
+        }
+      });
   };
 
   const onDrawAnnotation = (event: Event) => {
@@ -366,8 +404,9 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       note: note ?? '',
       rect: isNote ? detail.rect : undefined,
       cfi,
-      range,
       index,
+      range,
+      page: annotation.page || progress.page,
     };
     if (isNote) {
       setShowAnnotationNotes(true);
@@ -390,7 +429,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     handleUpToPopup();
   };
 
-  useFoliateEvents(view, { onLoad, onDrawAnnotation, onShowAnnotation });
+  useFoliateEvents(view, { onLoad, onCreateOverlay, onDrawAnnotation, onShowAnnotation });
 
   useEffect(() => {
     handleShowPopup(showingPopup);
@@ -608,9 +647,9 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
       id: uniqueId(),
       type: 'excerpt',
       cfi,
-      text: selection.text,
       note: '',
-      page: progress.page,
+      text: selection.text,
+      page: selection.page,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -729,7 +768,12 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     if (!selection || !selection.text) return;
     setShowAnnotPopup(false);
     setEditingAnnotation(null);
-    eventDispatcher.dispatch('tts-speak', { bookKey, range: selection.range, oneTime });
+    eventDispatcher.dispatch('tts-speak', {
+      bookKey,
+      oneTime,
+      range: selection.range,
+      index: selection.index,
+    });
   };
 
   const handleProofread = () => {
@@ -841,7 +885,9 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
     }, 100);
 
     const filename = `${makeSafeFilename(book.title)}.md`;
-    const saved = await appService?.saveFile(filename, markdownContent, 'text/markdown');
+    const saved = await appService?.saveFile(filename, markdownContent, {
+      mimeType: 'text/markdown',
+    });
     eventDispatcher.dispatch('toast', {
       type: 'info',
       message: saved ? _('Exported successfully') : _('Copied to clipboard'),
@@ -867,21 +913,18 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
           tooltipText: selectionAnnotated ? _('Delete Highlight') : _(label),
           Icon: selectionAnnotated ? RiDeleteBinLine : Icon,
           onClick: handleHighlight,
-          disabled: bookData.book?.format === 'PDF',
         };
       case 'annotate':
         return {
           tooltipText: _(label),
           Icon,
           onClick: handleAnnotate,
-          disabled: bookData.book?.format === 'PDF',
         };
       case 'search':
         return {
           tooltipText: _(label),
           Icon,
           onClick: handleSearch,
-          disabled: bookData.book?.format === 'PDF',
         };
       case 'dictionary':
         return { tooltipText: _(label), Icon, onClick: handleDictionary };
@@ -894,7 +937,6 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
           tooltipText: _(label),
           Icon,
           onClick: handleSpeakText,
-          disabled: bookData.book?.format === 'PDF',
         };
       case 'proofread':
         return {
@@ -982,6 +1024,7 @@ const Annotator: React.FC<{ bookKey: string }> = ({ bookKey }) => {
           annotation={editingAnnotation}
           selection={selection}
           handleColor={selectedColor}
+          externalDragPoint={externalDragPoint}
           getAnnotationText={getAnnotationText}
           setSelection={setSelection}
           onStartEdit={handleStartEditAnnotation}

@@ -18,7 +18,7 @@ import { formatTitle, getMetadataHash, getPrimaryLanguage } from '@/utils/book';
 import { getBaseFilename } from '@/utils/path';
 import { SUPPORTED_LANGNAMES } from '@/services/constants';
 import { useSettingsStore } from './settingsStore';
-import { useBookDataStore } from './bookDataStore';
+import { BookData, useBookDataStore } from './bookDataStore';
 import { useLibraryStore } from './libraryStore';
 import { uniqueId } from '@/utils/misc';
 import { eventDispatcher } from '@/utils/event';
@@ -52,6 +52,7 @@ interface ReaderStore {
   setHoveredBookKey: (key: string | null) => void;
   setBookmarkRibbonVisibility: (key: string, visible: boolean) => void;
   setTTSEnabled: (key: string, enabled: boolean) => void;
+  setIsLoading: (key: string, loading: boolean) => void;
   setIsSyncing: (key: string, syncing: boolean) => void;
   setProgress: (
     key: string,
@@ -162,6 +163,25 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
         bookDoc = doc.book;
       }
       const config = await appService.loadBookConfig(book, settings);
+      // Import annotations from third-party readers on first open
+      if (bookDoc.metadata.identifier) {
+        const { getAnnotationProviders } = await import('@/services/annotation');
+        for (const provider of getAnnotationProviders()) {
+          if (provider.isAvailable(appService)) {
+            const merged = await provider.importAnnotations(
+              appService,
+              bookDoc.metadata.identifier,
+              config,
+            );
+            if (merged !== config) {
+              Object.assign(config, merged);
+              await appService.saveBookConfig(book, config, settings);
+            }
+          }
+        }
+      }
+      // Filter out invalid booknotes
+      config.booknotes = config.booknotes?.filter((booknote) => booknote.cfi) ?? [];
       await updateToc(
         bookDoc,
         config.viewSettings?.sortedTOC ?? false,
@@ -182,24 +202,27 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
       book.primaryLanguage = book.primaryLanguage ?? primaryLanguage;
       book.metadata = book.metadata ?? bookDoc.metadata;
 
-      // Update series info from metadata
+      // Update series info from metadata if available and not already set on the book
       if (bookDoc.metadata.belongsTo?.series) {
         const belongsTo = bookDoc.metadata.belongsTo.series;
         const series = Array.isArray(belongsTo) ? belongsTo[0] : belongsTo;
         if (series) {
-          book.metadata.series = formatTitle(series.name);
-          book.metadata.seriesIndex = parseFloat(series.position || '0');
+          book.metadata.series = book.metadata.series ?? formatTitle(series.name);
+          book.metadata.seriesIndex =
+            book.metadata.seriesIndex ?? parseFloat(series.position || '0');
         }
       }
       // TODO: uncomment this when we can ensure metaHash is correctly generated for all books
       // book.metaHash = book.metaHash ?? getMetadataHash(bookDoc.metadata);
       book.metaHash = getMetadataHash(bookDoc.metadata);
 
-      const isFixedLayout = FIXED_LAYOUT_FORMATS.has(book.format);
+      const isFixedLayout =
+        bookDoc.rendition?.layout === 'pre-paginated' || FIXED_LAYOUT_FORMATS.has(book.format);
+      const newBookData: BookData = { id, book, file, config, bookDoc, isFixedLayout };
       useBookDataStore.setState((state) => ({
         booksData: {
           ...state.booksData,
-          [id]: { id, book, file, config, bookDoc, isFixedLayout },
+          [id]: newBookData,
         },
       }));
       const configViewSettings = config.viewSettings!;
@@ -366,13 +389,13 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
               location,
               sectionHref: tocItem?.href,
               sectionLabel: tocItem?.label,
-              sectionId: tocItem?.id,
               section,
               pageinfo,
               timeinfo,
+              index: section.current,
               range,
               page: pageInfo.current + 1, // 1-based page number
-            },
+            } as BookProgress,
           },
         },
       };
@@ -395,6 +418,17 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
         [key]: {
           ...state.viewStates[key]!,
           ttsEnabled: enabled,
+        },
+      },
+    })),
+
+  setIsLoading: (key: string, loading: boolean) =>
+    set((state) => ({
+      viewStates: {
+        ...state.viewStates,
+        [key]: {
+          ...state.viewStates[key]!,
+          loading,
         },
       },
     })),

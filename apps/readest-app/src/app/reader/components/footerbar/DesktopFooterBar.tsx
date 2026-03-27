@@ -67,31 +67,39 @@ const DesktopFooterBar: React.FC<FooterBarChildProps> = ({
 
   return (
     <div
-      className='hidden h-8 w-full items-center gap-x-4 px-4 sm:flex'
-      style={{ bottom: isMobile ? `${gridInsets.bottom * 0.33}px` : '0px' }}
+      className='hidden h-8 w-full items-center gap-x-4 overflow-x-auto px-4 sm:flex'
+      style={{
+        bottom: isMobile ? `${gridInsets.bottom * 0.33}px` : '0px',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+      }}
     >
-      <Button
-        icon={getNavigationIcon(
-          viewSettings?.rtl,
-          <RiArrowLeftDoubleLine />,
-          <RiArrowRightDoubleLine />,
-        )}
-        onClick={getNavigationHandler(
-          viewSettings?.rtl,
-          navigationHandlers.onPrevSection,
-          navigationHandlers.onNextSection,
-        )}
-        label={getNavigationLabel(viewSettings?.rtl, _('Previous Section'), _('Next Section'))}
-      />
-      <Button
-        icon={getNavigationIcon(viewSettings?.rtl, <RiArrowLeftSLine />, <RiArrowRightSLine />)}
-        onClick={getNavigationHandler(
-          viewSettings?.rtl,
-          navigationHandlers.onPrevPage,
-          navigationHandlers.onNextPage,
-        )}
-        label={getNavigationLabel(viewSettings?.rtl, _('Previous Page'), _('Next Page'))}
-      />
+      {!viewSettings?.showPaginationButtons && (
+        <Button
+          icon={getNavigationIcon(
+            viewSettings?.rtl,
+            <RiArrowLeftDoubleLine />,
+            <RiArrowRightDoubleLine />,
+          )}
+          onClick={getNavigationHandler(
+            viewSettings?.rtl,
+            navigationHandlers.onPrevSection,
+            navigationHandlers.onNextSection,
+          )}
+          label={getNavigationLabel(viewSettings?.rtl, _('Previous Section'), _('Next Section'))}
+        />
+      )}
+      {!viewSettings?.showPaginationButtons && (
+        <Button
+          icon={getNavigationIcon(viewSettings?.rtl, <RiArrowLeftSLine />, <RiArrowRightSLine />)}
+          onClick={getNavigationHandler(
+            viewSettings?.rtl,
+            navigationHandlers.onPrevPage,
+            navigationHandlers.onNextPage,
+          )}
+          label={getNavigationLabel(viewSettings?.rtl, _('Previous Page'), _('Next Page'))}
+        />
+      )}
       <Button
         icon={getNavigationIcon(viewSettings?.rtl, <RiArrowGoBackLine />, <RiArrowGoForwardLine />)}
         onClick={navigationHandlers.onGoBack}
@@ -108,7 +116,7 @@ const DesktopFooterBar: React.FC<FooterBarChildProps> = ({
         <span
           title={_('Reading Progress')}
           aria-label={`${_('Reading Progress')}: ${Math.round(progressFraction * 100)}%`}
-          className='mx-2 text-center text-sm'
+          className='mx-2 text-nowrap text-center text-sm'
         >
           <span aria-hidden='true'>{progressInfo}</span>
         </span>
@@ -128,28 +136,32 @@ const DesktopFooterBar: React.FC<FooterBarChildProps> = ({
         onClick={onSpeakText!}
         label={_('Speak')}
       />
-      <Button
-        icon={getNavigationIcon(viewSettings?.rtl, <RiArrowRightSLine />, <RiArrowLeftSLine />)}
-        onClick={getNavigationHandler(
-          viewSettings?.rtl,
-          navigationHandlers.onNextPage,
-          navigationHandlers.onPrevPage,
-        )}
-        label={getNavigationLabel(viewSettings?.rtl, _('Next Page'), _('Previous Page'))}
-      />
-      <Button
-        icon={getNavigationIcon(
-          viewSettings?.rtl,
-          <RiArrowRightDoubleLine />,
-          <RiArrowLeftDoubleLine />,
-        )}
-        onClick={getNavigationHandler(
-          viewSettings?.rtl,
-          navigationHandlers.onNextSection,
-          navigationHandlers.onPrevSection,
-        )}
-        label={getNavigationLabel(viewSettings?.rtl, _('Next Section'), _('Previous Section'))}
-      />
+      {!viewSettings?.showPaginationButtons && (
+        <Button
+          icon={getNavigationIcon(viewSettings?.rtl, <RiArrowRightSLine />, <RiArrowLeftSLine />)}
+          onClick={getNavigationHandler(
+            viewSettings?.rtl,
+            navigationHandlers.onNextPage,
+            navigationHandlers.onPrevPage,
+          )}
+          label={getNavigationLabel(viewSettings?.rtl, _('Next Page'), _('Previous Page'))}
+        />
+      )}
+      {!viewSettings?.showPaginationButtons && (
+        <Button
+          icon={getNavigationIcon(
+            viewSettings?.rtl,
+            <RiArrowRightDoubleLine />,
+            <RiArrowLeftDoubleLine />,
+          )}
+          onClick={getNavigationHandler(
+            viewSettings?.rtl,
+            navigationHandlers.onNextSection,
+            navigationHandlers.onPrevSection,
+          )}
+          label={getNavigationLabel(viewSettings?.rtl, _('Next Section'), _('Previous Section'))}
+        />
+      )}
     </div>
   );
 };
