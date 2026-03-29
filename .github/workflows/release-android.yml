@@ -95,6 +95,17 @@ jobs:
           pnpm tauri icon ../../data/icons/readest-book.png
           git checkout .
 
+          version=${{ needs.get-version.outputs.version }}
+
+          # Update package.json version so the Android manifest versionName
+          # matches the GitHub release tag instead of the hardcoded value.
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = process.argv[1];
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          " "$version"
+
           pushd src-tauri/gen/android
           echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" > keystore.properties
           echo "password=${{ secrets.ANDROID_KEY_PASSWORD }}" >> keystore.properties
@@ -102,7 +113,6 @@ jobs:
           echo "storeFile=$RUNNER_TEMP/keystore.jks" >> keystore.properties
           popd
 
-          version=${{ needs.get-version.outputs.version }}
           apk_path=src-tauri/gen/android/app/build/outputs/apk/universal/release
           arm64_apk=Readest_${version}_arm64.apk
           pnpm tauri android build --target aarch64
