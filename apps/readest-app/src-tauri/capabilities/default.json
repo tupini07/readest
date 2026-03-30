@@ -84,7 +84,7 @@
           "path": "**/com.github.johnfactotum.Foliate/**/*"
         },
         {
-          "path": "**/last-book-cover.png"
+          "path": "**/last_book_cover.png"
         }
       ]
     },
