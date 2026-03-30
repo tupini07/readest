@@ -13,7 +13,7 @@ async function createScreenSizedCover(
   coverFilename: string,
 ): Promise<ArrayBuffer> {
   const coverData = (await appService.readFile(coverFilename, 'Books', 'binary')) as ArrayBuffer;
-  const blob = new Blob([coverData], { type: 'image/png' });
+  const blob = new Blob([coverData]);
   const imageBitmap = await createImageBitmap(blob);
 
   const screenWidth = screen.width;
@@ -24,7 +24,11 @@ async function createScreenSizedCover(
   const scaledHeight = imageBitmap.height * scale;
 
   const canvas = new OffscreenCanvas(screenWidth, screenHeight);
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    imageBitmap.close();
+    throw new Error('Failed to create 2D rendering context for cover image');
+  }
 
   const y = (screenHeight - scaledHeight) / 2;
   ctx.drawImage(imageBitmap, 0, y, scaledWidth, scaledHeight);
