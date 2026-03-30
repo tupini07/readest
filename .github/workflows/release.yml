@@ -36,7 +36,11 @@ jobs:
             } else {
               // workflow_dispatch: create a new release with timestamp tag
               const now = new Date();
-              const version = `${now.getUTCFullYear()}.${now.getUTCMonth() + 1}.${now.getUTCDate()}.${now.getUTCHours()}${String(now.getUTCMinutes()).padStart(2, '0')}`;
+              const month = now.getUTCMonth() + 1;
+              const day = now.getUTCDate();
+              const hour = now.getUTCHours();
+              const minute = now.getUTCMinutes();
+              const version = `${now.getUTCFullYear()}.${month * 100 + day}.${hour * 100 + minute}`;
               releaseTag = `v${version}`;
               try {
                 const { data } = await github.rest.repos.createRelease({

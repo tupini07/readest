@@ -12,7 +12,12 @@ jobs:
       - name: generate version from timestamp
         id: version
         run: |
-          VERSION=$(date -u +'%Y.%-m.%-d.%-H%M')
+          YEAR=$(date -u +'%Y')
+          MONTH=$(date -u +'%-m')
+          DAY=$(date -u +'%-d')
+          HOUR=$(date -u +'%-H')
+          MIN=$(date -u +'%-M')
+          VERSION="${YEAR}.$((MONTH * 100 + DAY)).$((HOUR * 100 + MIN))"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
   build-android:
