@@ -287,7 +287,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
 
   const savedBookCoverPath = settings.savedBookCoverForLockScreenPath;
   const coverDir = savedBookCoverPath ? savedBookCoverPath.split(/[/\\]/).pop() : 'Images';
-  const savedBookCoverDescription = `💾 ${coverDir}/last-book-cover.png`;
+  const savedBookCoverDescription = `💾 ${coverDir}/last_book_cover.png`;
 
   return (
     <Menu

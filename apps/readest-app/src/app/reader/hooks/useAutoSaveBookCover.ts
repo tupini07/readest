@@ -6,6 +6,37 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { throttle } from '@/utils/throttle';
 import { getCoverFilename } from '@/utils/book';
 import { eventDispatcher } from '@/utils/event';
+import { AppService } from '@/types/system';
+
+async function createScreenSizedCover(
+  appService: AppService,
+  coverFilename: string,
+): Promise<ArrayBuffer> {
+  const coverData = (await appService.readFile(coverFilename, 'Books', 'binary')) as ArrayBuffer;
+  const blob = new Blob([coverData]);
+  const imageBitmap = await createImageBitmap(blob);
+
+  const screenWidth = screen.width;
+  const screenHeight = screen.height;
+
+  const scale = screenWidth / imageBitmap.width;
+  const scaledWidth = screenWidth;
+  const scaledHeight = imageBitmap.height * scale;
+
+  const canvas = new OffscreenCanvas(screenWidth, screenHeight);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    imageBitmap.close();
+    throw new Error('Failed to create 2D rendering context for cover image');
+  }
+
+  const y = (screenHeight - scaledHeight) / 2;
+  ctx.drawImage(imageBitmap, 0, y, scaledWidth, scaledHeight);
+  imageBitmap.close();
+
+  const outputBlob = await canvas.convertToBlob({ type: 'image/png' });
+  return await outputBlob.arrayBuffer();
+}
 
 export const useBookCoverAutoSave = (bookKey: string) => {
   const _ = useTranslation();
@@ -22,17 +53,20 @@ export const useBookCoverAutoSave = (bookKey: string) => {
           const savedBookHash = settings.savedBookCoverForLockScreen;
           const savedCoverPath = settings.savedBookCoverForLockScreenPath;
           if (appService && book && savedBookHash && savedBookHash !== book?.hash) {
-            const coverPath = await appService.resolveFilePath(getCoverFilename(book), 'Books');
             try {
-              const lastCoverFilename = 'last-book-cover.png';
+              const coverImageData = await createScreenSizedCover(
+                appService,
+                getCoverFilename(book),
+              );
+              const lastCoverFilename = 'last_book_cover.png';
               const builtinImagesPath = await appService.resolveFilePath('', 'Images');
               if (!savedCoverPath || savedCoverPath === builtinImagesPath) {
-                await appService.copyFile(coverPath, lastCoverFilename, 'Images');
+                await appService.writeFile(lastCoverFilename, 'Images', coverImageData);
               } else {
-                await appService.copyFile(
-                  coverPath,
+                await appService.writeFile(
                   `${savedCoverPath}/${lastCoverFilename}`,
                   'None',
+                  coverImageData,
                 );
               }
               settings.savedBookCoverForLockScreen = book.hash;
