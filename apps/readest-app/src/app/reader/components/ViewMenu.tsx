@@ -397,8 +397,16 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
 
               <div className='relative'>
                 <div
-                  className='flex cursor-pointer items-center justify-between px-3 py-1.5 hover:bg-base-200 rounded'
+                  role='button'
+                  tabIndex={0}
+                  className='hover:bg-base-200 flex cursor-pointer items-center justify-between rounded px-3 py-1.5'
                   onClick={() => setShowRatingPicker(!showRatingPicker)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setShowRatingPicker(!showRatingPicker);
+                    }
+                  }}
                 >
                   <span className='text-base-content/80 text-sm'>{_('Hardcover Rating')}</span>
                   <span className='text-base-content/60 text-sm'>
@@ -406,7 +414,7 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
                   </span>
                 </div>
                 {showRatingPicker && (
-                  <div className='bg-base-100 border-base-300 rounded border p-2 mx-2 mb-1'>
+                  <div className='bg-base-100 border-base-300 mx-2 mb-1 rounded border p-2'>
                     <div className='grid grid-cols-5 gap-1'>
                       {Array.from({ length: 10 }, (_, i) => (i + 1) * 0.5).map((val) => (
                         <button
@@ -415,7 +423,7 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
                           className={clsx(
                             'rounded px-1 py-0.5 text-center text-xs transition-colors',
                             val === hardcoverRating
-                              ? 'bg-amber-400 text-white font-semibold'
+                              ? 'bg-amber-400 font-semibold text-white'
                               : 'hover:bg-base-200 text-base-content/70',
                           )}
                           onClick={() => handleHardcoverRating(val)}
@@ -437,27 +445,15 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
                 )}
               </div>
 
-              <MenuItem
-                label={_('Sync Progress')}
-                onClick={handleHardcoverSyncProgress}
-              />
+              <MenuItem label={_('Sync Progress')} onClick={handleHardcoverSyncProgress} />
 
-              <MenuItem
-                label={_('Sync Highlights')}
-                onClick={handleHardcoverSyncHighlights}
-              />
+              <MenuItem label={_('Sync Highlights')} onClick={handleHardcoverSyncHighlights} />
             </>
           ) : (
-            <MenuItem
-              label={_('Link to Hardcover')}
-              onClick={handleOpenHardcoverSettings}
-            />
+            <MenuItem label={_('Link to Hardcover')} onClick={handleOpenHardcoverSettings} />
           )}
 
-          <MenuItem
-            label={_('Hardcover Settings')}
-            onClick={handleOpenHardcoverSettings}
-          />
+          <MenuItem label={_('Hardcover Settings')} onClick={handleOpenHardcoverSettings} />
         </>
       )}
 
