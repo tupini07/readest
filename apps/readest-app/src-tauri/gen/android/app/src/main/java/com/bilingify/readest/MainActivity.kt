@@ -30,11 +30,15 @@ class MainActivity : TauriActivity(), KeyDownInterceptor {
 
     override fun onWebViewCreate(webView: WebView) {
         wv = webView
-        // Disable native long-click on the WebView to prevent the system image context menu.
-        // On Android 8.0 (Oreo), the native image context menu can freeze the entire touch system,
-        // requiring a forced reboot. Text selection still works as it's handled by WebView internally.
-        webView.isLongClickable = false
-        webView.setOnLongClickListener { true }
+        // Only suppress the system context menu for image long-presses to prevent
+        // an Android 8.0 (Oreo) bug where the native image context menu can freeze
+        // the entire touch system. Text long-presses are left unhandled so WebView's
+        // built-in text selection continues to work.
+        webView.setOnLongClickListener {
+            val hitResult = webView.hitTestResult
+            hitResult.type == WebView.HitTestResult.IMAGE_TYPE ||
+                hitResult.type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE
+        }
     }
 
     private val keyEventMap = mapOf(

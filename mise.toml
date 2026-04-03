@@ -1,3 +1,6 @@
 [tools]
+node = "lts"
+pnpm = "10.30.3"
 android-sdk = "latest"
 java = "17"
+rust = "latest"
