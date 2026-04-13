@@ -274,7 +274,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     if (settings.alwaysOnTop) {
       tauriHandleSetAlwaysOnTop(settings.alwaysOnTop);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appService?.hasUpdater, settings]);
 
   useEffect(() => {

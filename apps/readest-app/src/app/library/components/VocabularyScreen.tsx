@@ -33,16 +33,20 @@ const ReviewScreen: React.FC<{
 }> = ({ language, onClose }) => {
   const _ = useTranslation();
   const { getDueEntries, recordReview } = useVocabularyStore();
-  const [dueCards, setDueCards] = useState<VocabEntry[]>([]);
+  const dueCards = useMemo(
+    () => getDueEntries().filter((e) => e.language === language),
+    [language, getDueEntries],
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
+  const [prevLanguage, setPrevLanguage] = useState(language);
 
-  useEffect(() => {
-    const due = getDueEntries().filter((e) => e.language === language);
-    setDueCards(due);
+  // Reset position when language changes (React-recommended pattern)
+  if (prevLanguage !== language) {
+    setPrevLanguage(language);
     setCurrentIndex(0);
     setRevealed(false);
-  }, [language, getDueEntries]);
+  }
 
   const currentCard = dueCards[currentIndex];
 
@@ -50,11 +54,7 @@ const ReviewScreen: React.FC<{
     if (!currentCard) return;
     recordReview(currentCard.id, quality);
     setRevealed(false);
-    if (currentIndex + 1 < dueCards.length) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      setDueCards([]);
-    }
+    setCurrentIndex(currentIndex + 1);
   };
 
   if (!currentCard || dueCards.length === 0) {
@@ -262,9 +262,7 @@ export const VocabularyScreen: React.FC = () => {
                 className='hidden'
                 onChange={handleImport}
               />
-              {lastSyncError && (
-                <span className='text-error text-xs'>{lastSyncError}</span>
-              )}
+              {lastSyncError && <span className='text-error text-xs'>{lastSyncError}</span>}
               {importMsg && <span className='text-success text-xs'>{importMsg}</span>}
             </div>
           )}
@@ -301,9 +299,7 @@ export const VocabularyScreen: React.FC = () => {
                   onChange={handleImport}
                 />
               </div>
-              {lastSyncError && (
-                <span className='text-error mt-1 text-xs'>{lastSyncError}</span>
-              )}
+              {lastSyncError && <span className='text-error mt-1 text-xs'>{lastSyncError}</span>}
             </div>
           ) : (
             languages.map((lang) => {
@@ -369,7 +365,7 @@ export const VocabularyScreen: React.FC = () => {
                               </p>
                             </div>
                             <button
-                              className='btn btn-ghost btn-sm ml-2 text-error'
+                              className='btn btn-ghost btn-sm text-error ml-2'
                               onClick={() => removeEntry(entry.id)}
                               aria-label={_('Delete')}
                             >

@@ -237,13 +237,21 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   };
 
   const handleSetSavedBookCoverForLockScreen = async () => {
-    if (!(await requestStoragePermission()) && appService?.distChannel === 'readest') return;
+    if (appService?.isAndroidApp) {
+      if (!(await requestStoragePermission()) && appService?.distChannel === 'readest') return;
+    }
 
     const newValue = settings.savedBookCoverForLockScreen ? '' : 'default';
     if (newValue) {
-      const response = await selectDirectory();
-      if (response.path) {
-        saveSysSettings(envConfig, 'savedBookCoverForLockScreenPath', response.path);
+      let selectedPath: string | undefined;
+      if (appService?.isAndroidApp) {
+        const response = await selectDirectory();
+        selectedPath = response.path;
+      } else {
+        selectedPath = await appService?.selectDirectory?.('write');
+      }
+      if (selectedPath) {
+        saveSysSettings(envConfig, 'savedBookCoverForLockScreenPath', selectedPath);
       }
     }
     saveSysSettings(envConfig, 'savedBookCoverForLockScreen', newValue);
@@ -278,8 +286,8 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
         : _('Auto Mode');
 
   const savedBookCoverPath = settings.savedBookCoverForLockScreenPath;
-  const coverDir = savedBookCoverPath ? savedBookCoverPath.split('/').pop() : 'Images';
-  const savedBookCoverDescription = `💾 ${coverDir}/last-book-cover.png`;
+  const coverDir = savedBookCoverPath ? savedBookCoverPath.split(/[/\\]/).pop() : 'Images';
+  const savedBookCoverDescription = `💾 ${coverDir}/last_book_cover.png`;
 
   return (
     <Menu
@@ -447,7 +455,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
             onClick={handleRefreshMetadata}
             disabled={isRefreshingMetadata}
           />
-          {appService?.isAndroidApp && appService?.distChannel !== 'playstore' && (
+          {isTauriAppPlatform() && appService?.distChannel !== 'appstore' && (
             <MenuItem
               label={_('Save Book Cover')}
               tooltip={_('Auto-save last book cover')}
