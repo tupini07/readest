@@ -9,6 +9,7 @@ permissions:
   pull-requests: write
 jobs:
   rust_lint:
+    if: github.repository == 'readest/readest'
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: '-C target-cpu=skylake'
