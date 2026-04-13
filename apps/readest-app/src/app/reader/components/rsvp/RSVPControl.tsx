@@ -4,9 +4,11 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useReaderStore } from '@/store/readerStore';
 import { useBookDataStore } from '@/store/bookDataStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { useThemeStore } from '@/store/themeStore';
 import { RSVPController, RsvpStartChoice, RsvpStopPosition } from '@/services/rsvp';
 import { eventDispatcher } from '@/utils/event';
+import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { BookNote } from '@/types/book';
 import { Insets } from '@/types/misc';
@@ -103,13 +105,10 @@ const expandRangeToSentence = (range: Range, doc: Document): Range => {
 
 const RSVPControl: React.FC<RSVPControlProps> = ({ bookKey, gridInsets }) => {
   const _ = useTranslation();
-  const {
-    getView,
-    getProgress,
-    getViewSettings: _getViewSettings,
-    setProgress: _setProgress,
-  } = useReaderStore();
-  const { getBookData } = useBookDataStore();
+  const { envConfig } = useEnv();
+  const { settings } = useSettingsStore();
+  const { getView, getProgress } = useReaderStore();
+  const { getBookData, getConfig, setConfig, saveConfig } = useBookDataStore();
   const { themeCode } = useThemeStore();
 
   const [isActive, setIsActive] = useState(false);
@@ -203,6 +202,13 @@ const RSVPControl: React.FC<RSVPControlProps> = ({ bookKey, gridInsets }) => {
 
       const controller = controllerRef.current;
 
+      // Seed localStorage from cloud-synced BookConfig when this device has no local position.
+      // This restores RSVP progress saved on another device after a sync.
+      const configPos = getConfig(bookKey)?.rsvpPosition;
+      if (configPos) {
+        controller.seedPosition(configPos);
+      }
+
       // Set current CFI for position tracking
       if (progress?.location) {
         controller.setCurrentCfi(progress.location);
@@ -231,7 +237,7 @@ const RSVPControl: React.FC<RSVPControlProps> = ({ bookKey, gridInsets }) => {
         controller.removeEventListener('rsvp-start-choice', handleStartChoice);
       }, 100);
     },
-    [_, bookKey, getBookData, getProgress, getView, removeRsvpHighlight],
+    [_, bookKey, getBookData, getConfig, getProgress, getView, removeRsvpHighlight],
   );
 
   const handleStartDialogSelect = useCallback(
@@ -250,18 +256,16 @@ const RSVPControl: React.FC<RSVPControlProps> = ({ bookKey, gridInsets }) => {
           // Navigate to the saved position's section
           view.goTo(cfi);
 
-          // Wait for navigation, then reload and start RSVP
+          // Wait for navigation, then start RSVP — start() handles word extraction
+          // and position recovery from storage directly, so loadNextPageContent()
+          // must not be called here (it would clear the saved position first)
           setTimeout(() => {
             const progress = getProgress(bookKey);
             if (progress?.location) {
               controller.setCurrentCfi(progress.location);
             }
-            controller.loadNextPageContent();
-            // Small delay to ensure content is loaded
-            setTimeout(() => {
-              controller.start();
-              setIsActive(true);
-            }, 100);
+            controller.start();
+            setIsActive(true);
           }, 500);
         }
       };
@@ -381,20 +385,37 @@ const RSVPControl: React.FC<RSVPControlProps> = ({ bookKey, gridInsets }) => {
       controller.stop();
     }
 
+    // Persist RSVP position to BookConfig so it syncs to the cloud
+    const rsvpPosition = controller?.getStoredPosition();
+    if (rsvpPosition) {
+      const config = getConfig(bookKey);
+      if (config) {
+        setConfig(bookKey, { rsvpPosition });
+        saveConfig(envConfig, bookKey, { ...config, rsvpPosition }, settings);
+      }
+    }
+
     setIsActive(false);
     setShowStartDialog(false);
-  }, [bookKey, getView, removeRsvpHighlight, themeCode.primary]);
+  }, [
+    bookKey,
+    envConfig,
+    getConfig,
+    getView,
+    removeRsvpHighlight,
+    saveConfig,
+    setConfig,
+    settings,
+    themeCode.primary,
+  ]);
 
   const handleChapterSelect = useCallback(
     (href: string) => {
       const view = getView(bookKey);
       if (!view) return;
 
-      // Navigate to chapter
-      view.goTo(href);
-
-      // Wait for navigation, then reload RSVP content
-      setTimeout(() => {
+      const onRelocate = () => {
+        view.removeEventListener('relocate', onRelocate);
         const controller = controllerRef.current;
         if (controller) {
           const progress = getProgress(bookKey);
@@ -403,7 +424,9 @@ const RSVPControl: React.FC<RSVPControlProps> = ({ bookKey, gridInsets }) => {
           }
           controller.loadNextPageContent();
         }
-      }, 500);
+      };
+      view.addEventListener('relocate', onRelocate);
+      view.goTo(href);
     },
     [bookKey, getProgress, getView],
   );
@@ -412,25 +435,29 @@ const RSVPControl: React.FC<RSVPControlProps> = ({ bookKey, gridInsets }) => {
     const view = getView(bookKey);
     if (!view) return;
 
-    // Remove RSVP highlight when moving to next page
     removeRsvpHighlight();
 
-    // RSVP extracts ALL words from the current section via renderer.getContents().
-    // When RSVP runs out of words and calls this function, it means the entire
-    // chapter/section has been read, so we need to go to the next section.
-    await view.renderer.nextSection?.();
+    const indexBefore = view.renderer.primaryIndex;
 
-    // Wait for section change, then load new content
-    setTimeout(() => {
+    const onRelocate = () => {
+      view.removeEventListener('relocate', onRelocate);
       const controller = controllerRef.current;
-      if (controller) {
-        const progress = getProgress(bookKey);
-        if (progress?.location) {
-          controller.setCurrentCfi(progress.location);
-        }
-        controller.loadNextPageContent();
+      if (!controller) return;
+
+      // Pause at the end of the book instead of advancing
+      if (view.renderer.primaryIndex === indexBefore) {
+        controller.pause();
+        return;
       }
-    }, 500);
+
+      const progress = getProgress(bookKey);
+      if (progress?.location) {
+        controller.setCurrentCfi(progress.location);
+      }
+      controller.loadNextPageContent();
+    };
+    view.addEventListener('relocate', onRelocate);
+    await view.renderer.nextSection?.();
   }, [bookKey, getProgress, getView, removeRsvpHighlight]);
 
   // Get current chapter info

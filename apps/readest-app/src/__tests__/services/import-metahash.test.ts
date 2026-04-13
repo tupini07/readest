@@ -32,6 +32,7 @@ vi.mock('@/libs/storage', () => ({
 }));
 
 import { BaseAppService } from '@/services/appService';
+import { buildBookLookupIndex } from '@/services/bookService';
 
 // Concrete test subclass of BaseAppService with mocked fs
 class TestAppService extends BaseAppService {
@@ -240,10 +241,30 @@ describe('importBook metaHash deduplication', () => {
     fs.openFile.mockResolvedValue(new File(['content'], 'test.epub'));
 
     // Transient import requires string file path
-    const result = await service.importBook('/path/to/test.epub', books, true, true, false, true);
+    const result = await service.importBook('/path/to/test.epub', books, { transient: true });
 
     // Should create a new entry, not override existing
     expect(result).not.toBe(existingBook);
+  });
+
+  it('should promote extracted ISBN into metadata.isbn during import', async () => {
+    const books: Book[] = [];
+
+    mockPartialMD5.mockResolvedValue('new-hash-456');
+    setupMockBookDoc({
+      ...TEST_METADATA,
+      identifier: 'calibre:abc123',
+      altIdentifier: ['urn:isbn:9780316033664', 'mobi-asin:B004J4XGN6'],
+    });
+
+    const mockFile = new File(['new content'], 'test.epub', { type: 'application/epub+zip' });
+    const result = await service.importBook(mockFile, books);
+    expect(result).not.toBeNull();
+    if (!result) {
+      throw new Error('Expected importBook to return an imported book');
+    }
+
+    expect(result.metadata?.isbn).toBe('9780316033664');
   });
 });
 
@@ -571,5 +592,60 @@ describe('importBook metaHash aggregation', () => {
     expect(writtenConfig.bookHash).toBe('exact-hash');
     // Merged booknotes from both
     expect(writtenConfig.booknotes).toHaveLength(2);
+  });
+});
+
+describe('importBook with BookLookupIndex', () => {
+  let service: TestAppService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    service = new TestAppService();
+    const fs = service.getFs();
+    fs.exists.mockResolvedValue(false);
+    fs.createDir.mockResolvedValue(undefined);
+    fs.writeFile.mockResolvedValue(undefined);
+    fs.removeDir.mockResolvedValue(undefined);
+    fs.readFile.mockResolvedValue('{}');
+  });
+
+  it('updates the lookup index after a successful new-book import', async () => {
+    const books: Book[] = [];
+    const lookupIndex = buildBookLookupIndex(books);
+
+    mockPartialMD5.mockResolvedValue('imported-hash');
+    setupMockBookDoc();
+
+    const mockFile = new File(['content'], 'test.epub', { type: 'application/epub+zip' });
+    const result = await service.importBook(mockFile, books, { lookupIndex });
+
+    expect(result).not.toBeNull();
+    expect(result?.hash).toBe('imported-hash');
+    // The lookup index must contain the freshly imported book
+    expect(lookupIndex.byHash.get('imported-hash')).toBe(result);
+    if (result?.metaHash) {
+      const key = `${result.metaHash}:${result.format}`;
+      expect(lookupIndex.byMetaKey.get(key)).toContain(result);
+    }
+  });
+
+  it('finds existing book via lookup index without scanning books array', async () => {
+    const metaHash = getMetadataHash(TEST_METADATA);
+    const existingBook = makeBook({ hash: 'existing', metaHash });
+    // Pass an EMPTY books array but a lookup index that already contains the book.
+    // If the implementation falls back to books.find(), it will fail to find the
+    // existing book and create a new one. If it consults the lookup index, it
+    // will discover the existing book and update it.
+    const books: Book[] = [];
+    const lookupIndex = buildBookLookupIndex([existingBook]);
+
+    mockPartialMD5.mockResolvedValue('existing'); // same hash as existing
+    setupMockBookDoc();
+
+    const mockFile = new File(['content'], 'test.epub', { type: 'application/epub+zip' });
+    const result = await service.importBook(mockFile, books, { lookupIndex });
+
+    // Should reuse the existing book object via lookup index
+    expect(result).toBe(existingBook);
   });
 });

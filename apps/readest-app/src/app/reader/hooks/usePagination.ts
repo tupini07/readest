@@ -8,6 +8,8 @@ import { useDeviceControlStore } from '@/store/deviceStore';
 import { eventDispatcher } from '@/utils/event';
 import { isTauriAppPlatform } from '@/services/environment';
 import { tauriGetWindowLogicalPosition } from '@/utils/window';
+import { getReadingRulerMoveDirection } from '../utils/readingRuler';
+import { useTouchInterceptor } from './useTouchInterceptor';
 
 export type ScrollSource = 'touch' | 'mouse';
 
@@ -53,7 +55,7 @@ export const viewPagination = (
 ) => {
   if (!view || !viewSettings) return;
   const renderer = view.renderer;
-  if (view.book.dir === 'rtl') {
+  if (viewSettings.rtl) {
     side = swapLeftRight(side);
   }
   if (renderer.scrolled) {
@@ -116,6 +118,13 @@ export const usePagination = (
     const bookData = getBookData(bookKey);
     if (!viewState?.inited || !bookData) return;
 
+    const dispatchReadingRulerMove = (side: PaginationSide) => {
+      return eventDispatcher.dispatchSync('reading-ruler-move', {
+        bookKey,
+        direction: getReadingRulerMoveDirection(side, viewRef.current?.book.dir),
+      });
+    };
+
     if (msg instanceof MessageEvent) {
       if (msg.data && msg.data.bookKey === bookKey) {
         const viewSettings = getViewSettings(bookKey)!;
@@ -151,29 +160,32 @@ export const usePagination = (
               ) {
                 // toggle visibility of the header bar and the footer bar
                 setHoveredBookKey(hoveredBookKey ? null : bookKey);
-              } else {
-                if (hoveredBookKey) {
-                  setHoveredBookKey(null);
-                  return;
-                }
-                if (!viewSettings.disableClick! && screenX >= viewCenterX) {
-                  if (viewSettings.fullscreenClickArea) {
-                    viewPagination(viewRef.current, viewSettings, 'down');
-                  } else if (viewSettings.swapClickArea) {
-                    viewPagination(viewRef.current, viewSettings, 'left');
-                  } else {
-                    viewPagination(viewRef.current, viewSettings, 'right');
-                  }
-                } else if (!viewSettings.disableClick! && screenX < viewCenterX) {
-                  if (viewSettings.fullscreenClickArea) {
-                    viewPagination(viewRef.current, viewSettings, 'down');
-                  } else if (viewSettings.swapClickArea) {
-                    viewPagination(viewRef.current, viewSettings, 'right');
-                  } else {
-                    viewPagination(viewRef.current, viewSettings, 'left');
-                  }
-                }
+                return;
               }
+
+              if (hoveredBookKey) {
+                setHoveredBookKey(null);
+                return;
+              }
+
+              const side: PaginationSide =
+                screenX >= viewCenterX
+                  ? viewSettings.fullscreenClickArea
+                    ? 'down'
+                    : viewSettings.swapClickArea
+                      ? 'left'
+                      : 'right'
+                  : viewSettings.fullscreenClickArea
+                    ? 'down'
+                    : viewSettings.swapClickArea
+                      ? 'right'
+                      : 'left';
+
+              if (viewSettings.readingRulerEnabled && dispatchReadingRulerMove(side)) {
+                return;
+              }
+
+              viewPagination(viewRef.current, viewSettings, side);
             }
           }
         } else if (
@@ -206,24 +218,15 @@ export const usePagination = (
         const { keyName } = msg.detail;
         setHoveredBookKey('');
         if (keyName === 'VolumeUp') {
+          if (viewSettings.readingRulerEnabled && dispatchReadingRulerMove('up')) {
+            return;
+          }
           viewPagination(viewRef.current, viewSettings, 'up');
         } else if (keyName === 'VolumeDown') {
-          viewPagination(viewRef.current, viewSettings, 'down');
-        }
-      } else if (
-        msg.type === 'touch-swipe' &&
-        bookData.isFixedLayout &&
-        !viewSettings?.scrolled &&
-        !isPanningView(viewRef.current, viewSettings)
-      ) {
-        const { deltaX, deltaY, deltaT } = msg.detail;
-        const vx = Math.abs(deltaX / deltaT);
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30 && vx > 0.2) {
-          if (deltaX > 0) {
-            viewPagination(viewRef.current, viewSettings, 'left');
-          } else {
-            viewPagination(viewRef.current, viewSettings, 'right');
+          if (viewSettings.readingRulerEnabled && dispatchReadingRulerMove('down')) {
+            return;
           }
+          viewPagination(viewRef.current, viewSettings, 'down');
         }
       }
     } else {
@@ -233,10 +236,12 @@ export const usePagination = (
         const leftThreshold = width * 0.5;
         const rightThreshold = width * 0.5;
         const viewSettings = getViewSettings(bookKey);
-        if (clientX < leftThreshold) {
-          viewPagination(viewRef.current, viewSettings, 'left');
-        } else if (clientX > rightThreshold) {
-          viewPagination(viewRef.current, viewSettings, 'right');
+        if (!viewSettings?.disableClick) {
+          if (clientX < leftThreshold) {
+            viewPagination(viewRef.current, viewSettings, 'left');
+          } else if (clientX > rightThreshold) {
+            viewPagination(viewRef.current, viewSettings, 'right');
+          }
         }
       }
     }
@@ -259,6 +264,28 @@ export const usePagination = (
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Touch swipe page flip for fixed-layout books — registered as a touch interceptor
+  // so it participates in the priority-based consumption chain.
+  useTouchInterceptor(
+    `swipe-flip-${bookKey}`,
+    (bk, detail) => {
+      if (bk !== bookKey || detail.phase !== 'end') return false;
+      const bookData = getBookData(bookKey);
+      const viewSettings = getViewSettings(bookKey);
+      if (!bookData?.isFixedLayout || viewSettings?.scrolled) return false;
+      if (isPanningView(viewRef.current, viewSettings)) return false;
+
+      const { deltaX, deltaY, deltaT } = detail;
+      const vx = Math.abs(deltaX / (deltaT || 1));
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30 && vx > 0.2) {
+        viewPagination(viewRef.current, viewSettings, deltaX > 0 ? 'left' : 'right');
+        return true;
+      }
+      return false;
+    },
+    0,
+  );
 
   return {
     handlePageFlip,

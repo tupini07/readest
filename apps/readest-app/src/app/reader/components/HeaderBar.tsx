@@ -13,6 +13,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useTrafficLightStore } from '@/store/trafficLightStore';
 import { useTrafficLight } from '@/hooks/useTrafficLight';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
+import { useSpatialNavigation } from '@/app/reader/hooks/useSpatialNavigation';
 import { getHighlightColorHex } from '../utils/annotatorUtil';
 import { annotationToolQuickActions } from './annotator/AnnotationTools';
 import { AnnotationToolType } from '@/types/annotator';
@@ -68,7 +69,6 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   const iconSize16 = useResponsiveSize(16);
   const iconSize18 = useResponsiveSize(18);
   const headerRef = useRef<HTMLDivElement>(null);
-  const windowButtonVisible = appService?.hasWindowBar && !isTrafficLightVisible;
 
   const docs = view?.renderer.getContents() ?? [];
   const pointerInDoc = docs.some(({ doc }) => doc?.body?.style.cursor === 'pointer');
@@ -133,8 +133,12 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   const isHeaderCompact = headerWidth > 0 && headerWidth < 350;
   const insets = window.innerWidth < 640 ? screenInsets : gridInsets;
   const isHeaderVisible = hoveredBookKey === bookKey || isDropdownOpen;
+
+  useSpatialNavigation(headerRef, isHeaderVisible);
   const trafficLightInHeader =
     appService?.hasTrafficLight && !trafficLightInFullscreen && !isSideBarVisible && isTopLeft;
+  const windowButtonVisible =
+    appService?.hasWindowBar && !isTrafficLightVisible && !trafficLightInHeader;
 
   return (
     <div
@@ -149,6 +153,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
     >
       <div
         role='none'
+        tabIndex={-1}
         className={clsx('absolute top-0 z-10 h-11 w-full', pointerInDoc && 'pointer-events-none')}
         onClick={() => setHoveredBookKey(bookKey)}
         onMouseEnter={() => !appService?.isMobile && setHoveredBookKey(bookKey)}

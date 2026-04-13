@@ -235,10 +235,12 @@ describe('Paginator multi-view architecture', () => {
         { index: 5, offset: 150, size: 200 },
       ];
       const detectPrimary = (visibleStart: number) => {
+        let offset = 0;
         for (const view of views) {
-          if (visibleStart < view.offset + view.size) {
+          if (visibleStart < offset + view.size - 1) {
             return view.index;
           }
+          offset += view.size;
         }
         return views[views.length - 1]?.index;
       };
@@ -248,6 +250,67 @@ describe('Paginator multi-view architecture', () => {
       expect(detectPrimary(125)).toBe(4); // in second view
       expect(detectPrimary(150)).toBe(5); // at boundary → third view
       expect(detectPrimary(300)).toBe(5); // in third view
+    });
+
+    it('should handle floating-point precision at view boundaries (Android DPR)', () => {
+      // On Android with non-integer DPR, container scrollLeft and accumulated
+      // getBoundingClientRect() sizes diverge by tiny amounts (~0.0001px).
+      // Real trace: visibleStart=1570.9090576171875, accumulated offset+viewSize=1570.9091796875
+      // Fix: 1px tolerance so sub-pixel drift doesn't pick the wrong view.
+      const viewSize = 785.45458984375;
+      const detectPrimary = (visibleStart: number) => {
+        let offset = 0;
+        const views = [
+          { index: 1, size: viewSize },
+          { index: 2, size: viewSize },
+          { index: 3, size: viewSize },
+        ];
+        for (const view of views) {
+          if (visibleStart < offset + view.size - 1) {
+            return view.index;
+          }
+          offset += view.size;
+        }
+        return views[views.length - 1]?.index;
+      };
+      // visibleStart from scrollLeft: 2 * viewSize computed differently than sum of rects
+      const visibleStart = 1570.9090576171875; // container.scrollLeft
+      // With tolerance, this should detect index 3 (not 2)
+      expect(detectPrimary(visibleStart)).toBe(3);
+    });
+
+    it('should not inflate page count due to fractional DPR rounding (pages getter)', () => {
+      // On fractional DPR devices, getBoundingClientRect() on the view element
+      // returns a width that is a near-integer multiple of the container size,
+      // but with tiny floating-point drift. Math.ceil inflates the count by 1.
+      // Real scenario: containerSize=785.45458984375, viewSize should be
+      // exactly 4*containerSize but getBoundingClientRect() returns a value
+      // with sub-pixel error.
+      const containerSize = 785.45458984375;
+      const viewSize = containerSize * 4 + 0.0001; // tiny FP drift
+
+      // Bug: Math.ceil gives 5 instead of 4
+      const buggyPages = Math.ceil(viewSize / containerSize);
+      expect(buggyPages).toBe(5); // confirms the bug exists
+
+      // Fix: Math.round absorbs sub-pixel drift
+      const fixedPages = Math.round(viewSize / containerSize);
+      expect(fixedPages).toBe(4);
+    });
+
+    it('should not inflate rendered page count due to fractional DPR rounding', () => {
+      // Same issue for #renderedPages which sums multiple view sizes
+      const containerSize = 785.45458984375;
+      const viewSizes = [containerSize * 3 + 0.00005, containerSize * 2 + 0.00008];
+      const totalViewSize = viewSizes.reduce((a, b) => a + b, 0);
+
+      // Bug: Math.ceil over-counts
+      const buggyPages = Math.ceil(totalViewSize / containerSize);
+      expect(buggyPages).toBe(6); // should be 5 but ceil rounds up
+
+      // Fix: Math.round
+      const fixedPages = Math.round(totalViewSize / containerSize);
+      expect(fixedPages).toBe(5);
     });
   });
 

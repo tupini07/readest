@@ -14,8 +14,10 @@ import {
   TTSConfig,
   ViewConfig,
   ViewSettings,
+  ViewSettingsConfig,
 } from '@/types/book';
 import {
+  HardcoverSettings,
   KOSyncSettings,
   LibraryGroupByType,
   LibrarySortByType,
@@ -73,6 +75,12 @@ export const DEFAULT_READWISE_SETTINGS = {
   lastSyncedAt: 0,
 } as ReadwiseSettings;
 
+export const DEFAULT_HARDCOVER_SETTINGS = {
+  enabled: false,
+  accessToken: '',
+  lastSyncedAt: 0,
+} as HardcoverSettings;
+
 export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   keepLogin: false,
   autoUpload: true,
@@ -103,6 +111,7 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
 
   kosync: DEFAULT_KOSYNC_SETTINGS,
   readwise: DEFAULT_READWISE_SETTINGS,
+  hardcover: DEFAULT_HARDCOVER_SETTINGS,
   aiSettings: DEFAULT_AI_SETTINGS,
 
   lastSyncedAtBooks: 0,
@@ -149,6 +158,7 @@ export const DEFAULT_READSETTINGS: ReadSettings = {
   },
   customHighlightColors: HIGHLIGHT_COLOR_HEX,
   userHighlightColors: [],
+  defaultHighlightLabels: {},
   customTtsHighlightColors: [],
 };
 
@@ -179,6 +189,7 @@ export const DEFAULT_BOOK_LAYOUT: BookLayout = {
   compactMarginRightPx: 16,
   gapPercent: 5,
   scrolled: false,
+  noContinuousScroll: false,
   disableClick: false,
   fullscreenClickArea: false,
   swapClickArea: false,
@@ -209,22 +220,26 @@ export const DEFAULT_BOOK_STYLE: BookStyle = {
   textIndent: 0,
   fullJustification: true,
   hyphenation: true,
-  invertImgColorInDark: false,
   theme: 'light',
-  overrideFont: false,
-  overrideLayout: false,
-  overrideColor: false,
   backgroundTextureId: 'none',
   backgroundOpacity: 0.6,
   backgroundSize: 'cover',
+  highlightOpacity: 0.4,
   codeHighlighting: false,
   codeLanguage: 'auto-detect',
   userStylesheet: '',
   userUIStylesheet: '',
 
+  overrideFont: false,
+  overrideLayout: false,
+  overrideColor: false,
+  useBookLayout: false,
+
   zoomMode: 'fit-page',
   spreadMode: 'auto',
   keepCoverSpread: true,
+  invertImgColorInDark: false,
+  applyThemeToPDF: false,
 };
 
 export const DEFAULT_MOBILE_VIEW_SETTINGS: Partial<ViewSettings> = {
@@ -251,6 +266,10 @@ export const DEFAULT_EINK_VIEW_SETTINGS: Partial<ViewSettings> = {
   isEink: true,
   animated: false,
   volumeKeysToFlip: true,
+};
+
+export const DEFAULT_PARAGRAPH_MODE_CONFIG: ParagraphModeConfig = {
+  enabled: false,
 };
 
 export const DEFAULT_VIEW_CONFIG: ViewConfig = {
@@ -281,6 +300,8 @@ export const DEFAULT_VIEW_CONFIG: ViewConfig = {
   isEink: false,
   isColorEink: false,
 
+  paragraphMode: DEFAULT_PARAGRAPH_MODE_CONFIG,
+
   readingRulerEnabled: false,
   readingRulerLines: 2,
   readingRulerPosition: 33,
@@ -294,6 +315,7 @@ export const DEFAULT_TTS_CONFIG: TTSConfig = {
   ttsLocation: '',
   showTTSBar: false,
   ttsHighlightOptions: { style: 'highlight', color: '#808080' },
+  ttsMediaMetadata: 'sentence',
 };
 
 export const DEFAULT_TRANSLATOR_CONFIG: TranslatorConfig = {
@@ -331,15 +353,15 @@ export const DEFAULT_SCREEN_CONFIG: ScreenConfig = {
   screenOrientation: 'auto',
 };
 
-export const DEFAULT_PARAGRAPH_MODE_CONFIG: ParagraphModeConfig = {
-  enabled: false,
-};
-
 export const DEFAULT_BOOK_SEARCH_CONFIG: BookSearchConfig = {
   scope: 'book',
   matchCase: false,
   matchWholeWords: false,
   matchDiacritics: false,
+};
+
+export const DEFAULT_VIEW_SETTINGS_CONFIG: ViewSettingsConfig = {
+  isGlobal: true,
 };
 
 export const SYSTEM_SETTINGS_VERSION = 1;
@@ -822,6 +844,8 @@ export const TRANSLATED_LANGS = {
   si: 'සිංහල',
   'zh-CN': '简体中文',
   'zh-TW': '正體中文',
+  ro: 'Română',
+  hu: 'Magyar',
 };
 
 export const TRANSLATOR_LANGS: Record<string, string> = {
@@ -831,7 +855,6 @@ export const TRANSLATOR_LANGS: Record<string, string> = {
   fi: 'Suomi',
   da: 'Dansk',
   cs: 'Čeština',
-  hu: 'Magyar',
   km: 'ខ្មែរ',
   ro: 'Română',
   bg: 'Български',

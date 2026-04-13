@@ -5,8 +5,10 @@ import {
   BookConfig,
   BookContent,
   BookFormat,
+  BookLookupIndex,
   BookNote,
   FIXED_LAYOUT_FORMATS,
+  ImportBookOptions,
 } from '@/types/book';
 import {
   getDir,
@@ -28,8 +30,24 @@ import { deserializeConfig, serializeConfig } from '@/utils/serializer';
 import { ClosableFile } from '@/utils/file';
 import { TxtToEpubConverter } from '@/utils/txt';
 import { svg2png } from '@/utils/svg';
+import { normalizeMetadataIsbn } from '@/utils/isbn';
 import { BookFileNotFoundError } from './errors';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
+
+export function buildBookLookupIndex(books: Book[]): BookLookupIndex {
+  const byHash = new Map<string, Book>();
+  const byMetaKey = new Map<string, Book[]>();
+  for (const book of books) {
+    byHash.set(book.hash, book);
+    if (book.metaHash && !book.deletedAt) {
+      const key = `${book.metaHash}:${book.format}`;
+      const list = byMetaKey.get(key);
+      if (list) list.push(book);
+      else byMetaKey.set(key, [book]);
+    }
+  }
+  return { byHash, byMetaKey };
+}
 
 export interface CoverContext {
   fs: FileSystem;
@@ -125,12 +143,17 @@ export async function mergeBooks(
   fs: FileSystem,
   books: Book[],
   book: Book,
+  lookupIndex?: BookLookupIndex,
 ): Promise<string | undefined> {
   if (!book.metaHash) return undefined;
 
-  const duplicates = books.filter(
-    (b) => b.metaHash === book.metaHash && b.format === book.format && !b.deletedAt && b !== book,
-  );
+  const metaKey = `${book.metaHash}:${book.format}`;
+  const duplicates = lookupIndex
+    ? (lookupIndex.byMetaKey.get(metaKey) ?? []).filter((b) => !b.deletedAt && b !== book)
+    : books.filter(
+        (b) =>
+          b.metaHash === book.metaHash && b.format === book.format && !b.deletedAt && b !== book,
+      );
   if (duplicates.length === 0) return undefined;
 
   const allCandidates = [book, ...duplicates];
@@ -182,6 +205,16 @@ export async function mergeBooks(
 
 // --- Book Import ---
 
+/**
+ * Options consumed by bookService.importBook. Extends the user-facing
+ * ImportBookOptions with the required AppService callbacks that are bound by
+ * the AppService wrapper.
+ */
+export interface ImportBookInternalOptions extends ImportBookOptions {
+  saveBookConfig: (book: Book, config: BookConfig) => Promise<void>;
+  generateCoverImageUrl: (book: Book) => Promise<string>;
+}
+
 export async function importBook(
   fs: FileSystem,
   // file might be:
@@ -192,13 +225,17 @@ export async function importBook(
   // 4. File object from browsers
   file: string | File,
   books: Book[],
-  saveBook: boolean,
-  saveCover: boolean,
-  overwrite: boolean,
-  transient: boolean,
-  saveBookConfigFn: (book: Book, config: BookConfig) => Promise<void>,
-  generateCoverImageUrlFn: (book: Book) => Promise<string>,
+  options: ImportBookInternalOptions,
 ): Promise<Book | null> {
+  const {
+    saveBookConfig: saveBookConfigFn,
+    generateCoverImageUrl: generateCoverImageUrlFn,
+    saveBook = true,
+    saveCover = true,
+    overwrite = false,
+    transient = false,
+    lookupIndex,
+  } = options;
   try {
     let loadedBook: BookDoc;
     let format: BookFormat;
@@ -228,6 +265,7 @@ export async function importBook(
       if (!loadedBook) {
         throw new Error('Unsupported or corrupted book file');
       }
+      normalizeMetadataIsbn(loadedBook.metadata);
       const metadataTitle = formatTitle(loadedBook.metadata.title);
       if (!metadataTitle || !metadataTitle.trim() || metadataTitle === filename) {
         loadedBook.metadata.title = getBaseFilename(filename);
@@ -238,7 +276,9 @@ export async function importBook(
 
     const hash = await partialMD5(fileobj);
     const metaHash = getMetadataHash(loadedBook.metadata);
-    let existingBook = books.filter((b) => b.hash === hash)[0];
+    let existingBook = lookupIndex
+      ? lookupIndex.byHash.get(hash)
+      : books.find((b) => b.hash === hash);
     let metaHashMatch = false;
     let oldBookDir: string | undefined;
     if (existingBook) {
@@ -253,9 +293,10 @@ export async function importBook(
     let bestConfigData: string | undefined;
     if (!transient && metaHash) {
       if (!existingBook) {
-        const firstMatch = books.find(
-          (b) => b.metaHash === metaHash && b.format === format && !b.deletedAt,
-        );
+        const metaKey = `${metaHash}:${format}`;
+        const firstMatch = lookupIndex
+          ? (lookupIndex.byMetaKey.get(metaKey) ?? []).find((b) => !b.deletedAt)
+          : books.find((b) => b.metaHash === metaHash && b.format === format && !b.deletedAt);
         if (firstMatch) {
           oldBookDir = getDir(firstMatch);
           existingBook = firstMatch;
@@ -265,7 +306,7 @@ export async function importBook(
         }
       }
       if (existingBook) {
-        bestConfigData = await mergeBooks(fs, books, existingBook);
+        bestConfigData = await mergeBooks(fs, books, existingBook, lookupIndex);
       }
     }
 
@@ -356,7 +397,16 @@ export async function importBook(
     // Never overwrite the config file only when it's not existed
     if (!existingBook) {
       await saveBookConfigFn(book, INIT_BOOK_CONFIG);
-      books.splice(0, 0, book);
+      books.push(book);
+      if (lookupIndex) {
+        lookupIndex.byHash.set(book.hash, book);
+        if (book.metaHash) {
+          const key = `${book.metaHash}:${book.format}`;
+          const list = lookupIndex.byMetaKey.get(key);
+          if (list) list.push(book);
+          else lookupIndex.byMetaKey.set(key, [book]);
+        }
+      }
     } else if (metaHashMatch && oldBookDir && oldBookDir !== getDir(book)) {
       // Migrate config from old directory to new directory, updating bookHash and metaHash
       // Use aggregated best config when available from deduplication
