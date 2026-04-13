@@ -21,7 +21,18 @@ export default defineConfig({
       '**/dist/**',
       '**/.claude/**',
       '**/*.browser.test.ts',
+      '**/*.browser.test.tsx',
       '**/*.tauri.test.ts',
     ],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.d.ts',
+        'src/**/__tests__/**',
+        'src/**/test/**',
+      ],
+    },
   },
 });

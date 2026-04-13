@@ -61,6 +61,7 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
   const [invertImgColorInDark, setInvertImgColorInDark] = useState(
     viewSettings!.invertImgColorInDark,
   );
+  const [applyThemeToPDF, setApplyThemeToPDF] = useState(viewSettings!.applyThemeToPDF!);
 
   const zoomIn = () => setZoomLevel((prev) => Math.min(prev + ZOOM_STEP, MAX_ZOOM_LEVEL));
   const zoomOut = () => setZoomLevel((prev) => Math.max(prev - ZOOM_STEP, MIN_ZOOM_LEVEL));
@@ -183,6 +184,12 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
   }, [invertImgColorInDark]);
 
   useEffect(() => {
+    if (applyThemeToPDF === viewSettings.applyThemeToPDF) return;
+    saveViewSettings(envConfig, bookKey, 'applyThemeToPDF', applyThemeToPDF, true, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applyThemeToPDF]);
+
+  useEffect(() => {
     if (zoomMode === viewSettings.zoomMode) return;
     viewSettings.zoomMode = zoomMode;
     getView(bookKey)?.renderer.setAttribute('zoom', zoomMode);
@@ -212,7 +219,12 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keepCoverSpread]);
 
-  const lastSyncTime = Math.max(config?.lastSyncedAtConfig || 0, config?.lastSyncedAtNotes || 0);
+  const lastSyncTime = Math.max(
+    config?.lastSyncedAtConfig || 0,
+    config?.lastSyncedAtNotes || 0,
+    config?.lastPushedAtConfig || 0,
+    config?.lastPushedAtNotes || 0,
+  );
 
   return (
     <Menu
@@ -475,6 +487,13 @@ const ViewMenu: React.FC<ViewMenuProps> = ({ bookKey, setIsDropdownOpen }) => {
         Icon={themeMode === 'dark' ? BiMoon : themeMode === 'light' ? BiSun : TbSunMoon}
         onClick={cycleThemeMode}
       />
+      {bookData.book?.format === 'PDF' && (
+        <MenuItem
+          label={_('Apply Theme Colors to PDF')}
+          Icon={applyThemeToPDF ? MdCheck : undefined}
+          onClick={() => setApplyThemeToPDF(!applyThemeToPDF)}
+        />
+      )}
       <MenuItem
         label={_('Invert Image In Dark Mode')}
         disabled={!isDarkMode}

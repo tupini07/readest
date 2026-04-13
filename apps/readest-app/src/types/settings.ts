@@ -1,7 +1,7 @@
 import { CustomTheme } from '@/styles/themes';
 import { CustomFont } from '@/styles/fonts';
 import { CustomTexture } from '@/styles/textures';
-import { HighlightColor, HighlightStyle, ViewSettings } from './book';
+import { HighlightColor, HighlightStyle, UserHighlightColor, ViewSettings } from './book';
 import { OPDSCatalog } from './opds';
 import type { AISettings } from '@/services/ai/types';
 import type { NotebookTab } from '@/store/notebookStore';
@@ -50,7 +50,8 @@ export interface ReadSettings {
   highlightStyle: HighlightStyle;
   highlightStyles: Record<HighlightStyle, HighlightColor>;
   customHighlightColors: Record<HighlightColor, string>;
-  userHighlightColors: string[];
+  userHighlightColors: UserHighlightColor[];
+  defaultHighlightLabels: Partial<Record<HighlightColor, string>>;
   customTtsHighlightColors: string[];
   customThemes: CustomTheme[];
 }
@@ -60,6 +61,7 @@ export interface KOSyncSettings {
   serverUrl: string;
   username: string;
   userkey: string;
+  password?: string;
   deviceId: string;
   deviceName: string;
   checksumMethod: KOSyncChecksumMethod;
@@ -67,6 +69,12 @@ export interface KOSyncSettings {
 }
 
 export interface ReadwiseSettings {
+  enabled: boolean;
+  accessToken: string;
+  lastSyncedAt: number;
+}
+
+export interface HardcoverSettings {
   enabled: boolean;
   accessToken: string;
   lastSyncedAt: number;
@@ -112,6 +120,7 @@ export interface SystemSettings {
   hardcover: HardcoverSettings;
   readeck: ReadeckSettings;
   readwise: ReadwiseSettings;
+  hardcover: HardcoverSettings;
 
   lastSyncedAtBooks: number;
   lastSyncedAtConfigs: number;
@@ -120,6 +129,8 @@ export interface SystemSettings {
   migrationVersion: number;
 
   aiSettings: AISettings;
+  // Global read settings that apply to the reader page
   globalReadSettings: ReadSettings;
+  // Global view settings that apply to all books, and can be overridden by book-specific view settings
   globalViewSettings: ViewSettings;
 }

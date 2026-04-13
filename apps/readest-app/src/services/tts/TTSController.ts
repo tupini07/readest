@@ -194,13 +194,14 @@ export class TTSController extends EventTarget {
       doc,
       textWalker,
       createRejectFilter({
-        tags: ['rt'],
+        tags: ['rt', 'canvas', 'br'],
+        classes: ['annotationLayer'],
         contents: [{ tag: 'a', content: /^[\[\(]?[\*\d]+[\)\]]?$/ }],
       }),
       this.#getHighlighter(),
       granularity,
     );
-    console.log(`Initialized TTS for section ${sectionIndex}`);
+    console.log(`[TTS] Initialized TTS for section ${sectionIndex}`);
 
     return true;
   }
@@ -261,14 +262,26 @@ export class TTSController extends EventTarget {
     const tts = this.view.tts;
     if (!tts) return;
 
-    const ssmls: string[] = [];
+    // Gather all next SSMLs and rewind synchronously to avoid a race condition:
+    // tts.next() replaces TTS.#ranges (used by setMark() during playback).
+    // If async gaps exist between next()/prev() calls, a concurrent #speak()
+    // can dispatch marks against the wrong #ranges, causing incorrect highlights
+    // and accidental page turns.
+    const rawSsmls: string[] = [];
     for (let i = 0; i < count; i++) {
-      const ssml = await this.#preprocessSSML(tts.next());
+      const ssml = tts.next();
+      if (!ssml) break;
+      rawSsmls.push(ssml);
+    }
+    for (let i = 0; i < rawSsmls.length; i++) {
+      tts.prev();
+    }
+
+    const ssmls: string[] = [];
+    for (const raw of rawSsmls) {
+      const ssml = await this.#preprocessSSML(raw);
       if (!ssml) break;
       ssmls.push(ssml);
-    }
-    for (let i = 0; i < ssmls.length; i++) {
-      tts.prev();
     }
     await Promise.all(ssmls.map((ssml) => this.preloadSSML(ssml, new AbortController().signal)));
   }
@@ -302,7 +315,7 @@ export class TTSController extends EventTarget {
 
     this.#currentSpeakPromise = new Promise(async (resolve, reject) => {
       try {
-        console.log('TTS speak');
+        console.log('[TTS] speak');
         this.state = 'playing';
 
         signal.addEventListener('abort', () => {
@@ -321,7 +334,7 @@ export class TTSController extends EventTarget {
               await this.stop();
             }
           }
-          console.log('no SSML, skipping for', this.#nossmlCnt);
+          console.log('[TTS] no SSML, skipping for', this.#nossmlCnt);
           return;
         } else {
           this.#nossmlCnt = 0;

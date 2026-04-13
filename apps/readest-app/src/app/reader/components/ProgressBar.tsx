@@ -146,10 +146,16 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   }, [progressBarMode]);
 
   const isMobile = appService?.isMobile || window.innerWidth < 640;
+  const showStatusInfo =
+    (progressBarMode === 'all' ||
+      progressBarMode.includes('battery') ||
+      progressBarMode.includes('time')) &&
+    (hasTimeInfo || hasBatteryInfo);
 
   return (
     <div
       role='presentation'
+      tabIndex={-1}
       className={clsx(
         'progressinfo absolute bottom-0 flex items-center justify-between font-sans',
         isEink ? 'text-sm font-normal' : 'text-neutral-content text-xs font-extralight',
@@ -173,12 +179,12 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
       style={
         isVertical
           ? {
+              top: `${(contentInsets.top - gridInsets.top) * 1.5}px`,
               bottom: `${(contentInsets.bottom - gridInsets.bottom) * 1.5}px`,
               left: showDoubleBorder
                 ? `calc(${contentInsets.left}px)`
                 : `calc(${Math.max(0, contentInsets.left - 32)}px)`,
               width: showDoubleBorder ? '32px' : `${contentInsets.left}px`,
-              height: `calc(100% - ${((contentInsets.top + contentInsets.bottom) / 2) * 3}px)`,
             }
           : {
               paddingInlineStart: `calc(${horizontalGap / 2}% + ${contentInsets.left / 2}px)`,
@@ -196,7 +202,12 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
       >
         {(progressBarMode === 'all' || progressBarMode.includes('remaining')) &&
           hasRemainingInfo && (
-            <div className='remaining-info flex-1 overflow-hidden whitespace-nowrap text-start'>
+            <div
+              className={clsx(
+                'remaining-info flex-1 whitespace-nowrap text-start',
+                showStatusInfo && 'overflow-hidden',
+              )}
+            >
               {viewSettings.showRemainingTime ? (
                 <span className='time-left-label text-start'>{timeLeftStr}</span>
               ) : viewSettings.showRemainingPages && showPagesLeft ? (
@@ -220,23 +231,20 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
             </div>
           )}
 
-        {(progressBarMode === 'all' ||
-          progressBarMode.includes('battery') ||
-          progressBarMode.includes('time')) &&
-          progressInfo && (
-            <StatusInfo
-              showTime={
-                (progressBarMode === 'all' || progressBarMode.includes('time')) && hasTimeInfo
-              }
-              use24Hour={viewSettings.use24HourClock}
-              showBattery={
-                (progressBarMode === 'all' || progressBarMode.includes('battery')) && hasBatteryInfo
-              }
-              showBatteryPercentage={viewSettings.showBatteryPercentage}
-              isVertical={isVertical}
-              isEink={isEink}
-            />
-          )}
+        {showStatusInfo && (
+          <StatusInfo
+            showTime={
+              (progressBarMode === 'all' || progressBarMode.includes('time')) && hasTimeInfo
+            }
+            use24Hour={viewSettings.use24HourClock}
+            showBattery={
+              (progressBarMode === 'all' || progressBarMode.includes('battery')) && hasBatteryInfo
+            }
+            showBatteryPercentage={viewSettings.showBatteryPercentage}
+            isVertical={isVertical}
+            isEink={isEink}
+          />
+        )}
 
         <div className='progress-info flex-1 items-center overflow-hidden whitespace-nowrap text-end tabular-nums'>
           {(progressBarMode === 'all' || progressBarMode.includes('progress')) && (

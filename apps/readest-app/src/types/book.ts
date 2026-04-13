@@ -1,5 +1,6 @@
 import { BookMetadata } from '@/libs/document';
 import { TTSHighlightOptions } from '@/services/tts/types';
+import { TTSMediaMetadataMode } from '@/services/tts/types';
 import { AnnotationToolType } from './annotator';
 
 export type BookFormat =
@@ -18,6 +19,13 @@ export type ReadingStatus = 'unread' | 'reading' | 'finished';
 export type HighlightStyle = 'highlight' | 'underline' | 'squiggly';
 // Predefined highlight colors, can be extended with custom hex colors
 export type HighlightColor = 'red' | 'yellow' | 'green' | 'blue' | 'violet' | string;
+export const DEFAULT_HIGHLIGHT_COLORS = ['red', 'yellow', 'green', 'blue', 'violet'] as const;
+export type DefaultHighlightColor = (typeof DEFAULT_HIGHLIGHT_COLORS)[number];
+// A user-added highlight color with optional label
+export interface UserHighlightColor {
+  hex: string;
+  label?: string;
+}
 export type ReadingRulerColor = 'transparent' | 'yellow' | 'green' | 'blue' | 'rose';
 
 export interface ParagraphModeConfig {
@@ -25,6 +33,36 @@ export interface ParagraphModeConfig {
 }
 
 export const FIXED_LAYOUT_FORMATS: Set<BookFormat> = new Set(['PDF', 'CBZ']);
+
+/**
+ * Lookup tables built from a Book[] for O(1) hash and metaHash queries during
+ * batch import. Mutated in place by importBook so subsequent files in the
+ * same batch see books added by earlier files. Defined here (rather than in
+ * services/bookService) so the AppService interface in types/system can
+ * reference it without an inline `import(...)` type.
+ */
+export interface BookLookupIndex {
+  byHash: Map<string, Book>;
+  byMetaKey: Map<string, Book[]>; // key = `${metaHash}:${format}`
+}
+
+/**
+ * User-facing options for AppService.importBook. The bookService implementation
+ * extends this with required callbacks (saveBookConfig / generateCoverImageUrl)
+ * that are bound by the AppService instance.
+ */
+export interface ImportBookOptions {
+  /** Whether to copy the file into the Books directory. Defaults to true. */
+  saveBook?: boolean;
+  /** Whether to extract and save a cover image. Defaults to true. */
+  saveCover?: boolean;
+  /** Whether to overwrite an existing file at the same path. Defaults to false. */
+  overwrite?: boolean;
+  /** Whether the import is transient (not stored long-term). Defaults to false. */
+  transient?: boolean;
+  /** Pre-built lookup index for O(1) dedup during batch imports. */
+  lookupIndex?: BookLookupIndex;
+}
 
 export interface Book {
   // if Book is a remote book we just lazy load the book content via url
@@ -121,6 +159,7 @@ export interface BookLayout {
   compactMarginPx?: number; // deprecated
   gapPercent: number;
   scrolled: boolean;
+  noContinuousScroll: boolean;
   disableClick: boolean;
   fullscreenClickArea: boolean;
   swapClickArea: boolean;
@@ -146,23 +185,27 @@ export interface BookStyle {
   textIndent: number;
   fullJustification: boolean;
   hyphenation: boolean;
-  invertImgColorInDark: boolean;
   theme: string;
-  overrideFont: boolean;
-  overrideLayout: boolean;
-  overrideColor: boolean;
   backgroundTextureId: string;
   backgroundOpacity: number;
   backgroundSize: string;
+  highlightOpacity: number;
   codeHighlighting: boolean;
   codeLanguage: string;
   userStylesheet: string;
   userUIStylesheet: string;
 
+  overrideFont: boolean;
+  overrideLayout: boolean;
+  overrideColor: boolean;
+  useBookLayout: boolean;
+
   // fixed-layout specific
   zoomMode: 'fit-page' | 'fit-width' | 'original-size' | 'custom';
   spreadMode: 'auto' | 'none';
   keepCoverSpread: boolean;
+  invertImgColorInDark: boolean;
+  applyThemeToPDF: boolean;
 }
 
 export interface BookFont {
@@ -221,6 +264,8 @@ export interface ViewConfig {
   isEink: boolean;
   isColorEink: boolean;
 
+  paragraphMode: ParagraphModeConfig;
+
   readingRulerEnabled: boolean;
   readingRulerLines: number;
   readingRulerPosition: number;
@@ -234,6 +279,7 @@ export interface TTSConfig {
   ttsLocation: string;
   showTTSBar: boolean;
   ttsHighlightOptions: TTSHighlightOptions;
+  ttsMediaMetadata: TTSMediaMetadataMode;
 }
 
 export interface TranslatorConfig {
@@ -292,6 +338,10 @@ export interface ProofreadRulesConfig {
   proofreadRules?: ProofreadRule[];
 }
 
+export interface ViewSettingsConfig {
+  isGlobal: boolean;
+}
+
 export interface ViewSettings
   extends
     BookLayout,
@@ -303,9 +353,8 @@ export interface ViewSettings
     TranslatorConfig,
     ScreenConfig,
     ProofreadRulesConfig,
-    AnnotatorConfig {
-  paragraphMode?: ParagraphModeConfig;
-}
+    AnnotatorConfig,
+    ViewSettingsConfig {}
 
 export interface BookProgress {
   location: string;
@@ -357,12 +406,18 @@ export interface BookConfig {
   location?: string; // CFI of the current location
   xpointer?: string; // XPointer of the current location (for Koreader interoperability)
   booknotes?: BookNote[];
+  rsvpPosition?: { cfi: string; wordText: string };
   searchConfig?: Partial<BookSearchConfig>;
   viewSettings?: Partial<ViewSettings>;
 
   lastSyncedAtConfig?: number;
   lastSyncedAtNotes?: number;
+  lastPushedAtConfig?: number;
+  lastPushedAtNotes?: number;
   foliateImportedAt?: number;
+
+  // Per-book switch for hardcover exports in reader menu.
+  hardcoverSyncEnabled?: boolean;
 
   updatedAt: number;
 }

@@ -237,11 +237,13 @@ const FoliateViewer: React.FC<{
       if (bookDoc.rendition?.layout === 'pre-paginated') {
         applyFixedlayoutStyles(detail.doc, viewSettings);
         const themeCode = getThemeCode();
-        if (themeCode && renderer) {
-          renderer.pageColors = {
-            background: themeCode.bg,
-            foreground: themeCode.fg,
-          };
+        if (bookData.book?.format === 'PDF' && themeCode && renderer) {
+          renderer.pageColors = viewSettings.applyThemeToPDF
+            ? {
+                background: themeCode.bg,
+                foreground: themeCode.fg,
+              }
+            : undefined;
         }
       }
 
@@ -344,7 +346,7 @@ const FoliateViewer: React.FC<{
 
   const { handlePageFlip } = usePagination(bookKey, viewRef, containerRef);
   const mouseHandlers = useMouseEvent(bookKey, handlePageFlip);
-  const touchHandlers = useTouchEvent(bookKey, handlePageFlip);
+  const touchHandlers = useTouchEvent(bookKey);
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedTableHtml, setSelectedTableHtml] = useState<string | null>(null);
@@ -613,11 +615,17 @@ const FoliateViewer: React.FC<{
     viewRef.current?.renderer.setAttribute('gap', `${viewSettings.gapPercent}%`);
     if (viewSettings.scrolled) {
       viewRef.current?.renderer.setAttribute('flow', 'scrolled');
+      if (viewSettings.noContinuousScroll) {
+        viewRef.current?.renderer.setAttribute('no-continuous-scroll', '');
+      } else {
+        viewRef.current?.renderer.removeAttribute('no-continuous-scroll');
+      }
     }
   };
 
   useEffect(() => {
     if (viewRef.current && viewRef.current.renderer) {
+      const renderer = viewRef.current.renderer;
       const viewSettings = getViewSettings(bookKey)!;
       viewRef.current.renderer.setStyles?.(getStyles(viewSettings));
       const docs = viewRef.current.renderer.getContents();
@@ -630,13 +638,13 @@ const FoliateViewer: React.FC<{
         applyScrollbarStyle(document, viewSettings.hideScrollbar || false);
       });
 
-      if (bookDoc.rendition?.layout === 'pre-paginated') {
-        if (themeCode && viewRef.current?.renderer) {
-          viewRef.current.renderer.pageColors = {
-            background: themeCode.bg,
-            foreground: themeCode.fg,
-          };
-        }
+      if (bookData?.book?.format === 'PDF' && themeCode && renderer) {
+        renderer.pageColors = viewSettings.applyThemeToPDF
+          ? {
+              background: themeCode.bg,
+              foreground: themeCode.fg,
+            }
+          : undefined;
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -646,6 +654,7 @@ const FoliateViewer: React.FC<{
     viewSettings?.scrolled,
     viewSettings?.overrideColor,
     viewSettings?.invertImgColorInDark,
+    viewSettings?.applyThemeToPDF,
     viewSettings?.hideScrollbar,
   ]);
 
@@ -698,6 +707,7 @@ const FoliateViewer: React.FC<{
     viewSettings?.showBarsOnScroll,
     viewSettings?.showMarginsOnScroll,
     viewSettings?.scrolled,
+    viewSettings?.noContinuousScroll,
     viewState?.ttsEnabled,
   ]);
 
