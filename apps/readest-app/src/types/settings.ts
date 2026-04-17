@@ -6,6 +6,7 @@ import { OPDSCatalog } from './opds';
 import type { AISettings } from '@/services/ai/types';
 import type { NotebookTab } from '@/store/notebookStore';
 import type { HardcoverSettings } from './hardcover';
+export type { HardcoverSettings };
 import type { ReadeckSettings } from './readeck';
 
 export type ThemeType = 'light' | 'dark' | 'auto';
@@ -74,12 +75,6 @@ export interface ReadwiseSettings {
   lastSyncedAt: number;
 }
 
-export interface HardcoverSettings {
-  enabled: boolean;
-  accessToken: string;
-  lastSyncedAt: number;
-}
-
 export interface SystemSettings {
   version: number;
   localBooksDir: string;
@@ -120,7 +115,6 @@ export interface SystemSettings {
   hardcover: HardcoverSettings;
   readeck: ReadeckSettings;
   readwise: ReadwiseSettings;
-  hardcover: HardcoverSettings;
 
   lastSyncedAtBooks: number;
   lastSyncedAtConfigs: number;

@@ -27,7 +27,7 @@ export const useHardcoverSync = (bookKey: string) => {
 
   const getClient = useCallback(async () => {
     const { settings } = useSettingsStore.getState();
-    if (!settings.hardcover?.enabled || !settings.hardcover?.accessToken) {
+    if (!settings.hardcover?.enabled || !settings.hardcover?.apiToken) {
       return null;
     }
     const appService = await envConfig.getAppService();

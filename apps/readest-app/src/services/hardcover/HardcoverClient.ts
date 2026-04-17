@@ -19,7 +19,7 @@ import {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type HardcoverSettingsLike = {
-  accessToken: string;
+  apiToken: string;
 };
 
 type BookContext = {
@@ -48,7 +48,7 @@ export class HardcoverClient {
 
   constructor(settings: HardcoverSettingsLike, mapStore: HardcoverSyncMapStore) {
     // Normalize token: Hardcover expects "Bearer <jwt>"; accept both formats
-    const raw = settings.accessToken.trim();
+    const raw = settings.apiToken.trim();
     this.token = raw.startsWith('Bearer ') ? raw : `Bearer ${raw}`;
     this.mapStore = mapStore;
   }

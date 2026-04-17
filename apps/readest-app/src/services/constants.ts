@@ -25,7 +25,6 @@ import {
   ReadwiseSettings,
   SystemSettings,
 } from '@/types/settings';
-import { HardcoverSettings } from '@/types/hardcover';
 import { ReadeckSettings } from '@/types/readeck';
 import { UserStorageQuota, UserDailyTranslationQuota } from '@/types/quota';
 import { getDefaultMaxBlockSize, getDefaultMaxInlineSize } from '@/utils/config';
@@ -96,12 +95,6 @@ export const DEFAULT_READWISE_SETTINGS = {
   lastSyncedAt: 0,
 } as ReadwiseSettings;
 
-export const DEFAULT_HARDCOVER_SETTINGS = {
-  enabled: false,
-  accessToken: '',
-  lastSyncedAt: 0,
-} as HardcoverSettings;
-
 export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   keepLogin: false,
   autoUpload: true,
@@ -134,7 +127,6 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   hardcover: DEFAULT_HARDCOVER_SETTINGS,
   readeck: DEFAULT_READECK_SETTINGS,
   readwise: DEFAULT_READWISE_SETTINGS,
-  hardcover: DEFAULT_HARDCOVER_SETTINGS,
   aiSettings: DEFAULT_AI_SETTINGS,
 
   lastSyncedAtBooks: 0,
