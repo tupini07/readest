@@ -46,7 +46,7 @@ describe('HardcoverClient', () => {
   let client: HardcoverClient;
   let clientApi: HardcoverClientTestApi;
   let fetchMock: MockFetch;
-  const mockSettings = { accessToken: 'test-token' };
+  const mockSettings = { apiToken: 'test-token' };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -73,10 +73,10 @@ describe('HardcoverClient', () => {
   });
 
   test('should normalize accessToken correctly', () => {
-    const rawClient = new HardcoverClient({ accessToken: 'raw-jwt' }, mockMapStore);
+    const rawClient = new HardcoverClient({ apiToken: 'raw-jwt' }, mockMapStore);
     expect((rawClient as unknown as HardcoverClientTestApi).token).toBe('Bearer raw-jwt');
 
-    const bearClient = new HardcoverClient({ accessToken: 'Bearer already-has' }, mockMapStore);
+    const bearClient = new HardcoverClient({ apiToken: 'Bearer already-has' }, mockMapStore);
     expect((bearClient as unknown as HardcoverClientTestApi).token).toBe('Bearer already-has');
   });
 
