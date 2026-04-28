@@ -137,3 +137,15 @@ jobs:
           # Create release if it doesn't exist, otherwise upload to existing
           gh release create "$tag" --title "v${version}" --generate-notes --repo ${{ github.repository }} || true
           gh release upload "$tag" "$arm64_apk" --clobber --repo ${{ github.repository }}
+
+      - name: delete previous releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          current_tag="v${{ needs.get-version.outputs.version }}"
+          gh release list --limit 100 --json tagName -q '.[].tagName' --repo ${{ github.repository }} | while read -r tag; do
+            if [ "$tag" != "$current_tag" ]; then
+              echo "Deleting release $tag"
+              gh release delete "$tag" --yes --cleanup-tag --repo ${{ github.repository }} 2>/dev/null || true
+            fi
+          done
